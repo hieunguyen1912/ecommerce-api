@@ -1,6 +1,7 @@
-package com.hieu.ecommerce.validator;
+package com.hieu.ecommerce.common.anotation;
 
-import com.hieu.ecommerce.utils.Gender;
+import com.hieu.ecommerce.common.enums.Gender;
+import com.hieu.ecommerce.common.validator.GenderSubSetValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 

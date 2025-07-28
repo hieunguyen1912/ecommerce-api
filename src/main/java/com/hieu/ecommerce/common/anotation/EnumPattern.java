@@ -1,5 +1,6 @@
-package com.hieu.ecommerce.validator;
+package com.hieu.ecommerce.common.anotation;
 
+import com.hieu.ecommerce.common.validator.EnumPatternValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 

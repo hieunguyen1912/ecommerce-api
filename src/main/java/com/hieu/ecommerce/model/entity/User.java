@@ -1,8 +1,9 @@
 package com.hieu.ecommerce.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.hieu.ecommerce.utils.Gender;
-import com.hieu.ecommerce.utils.UserStatus;
+import com.hieu.ecommerce.common.anotation.EnumPattern;
+import com.hieu.ecommerce.common.enums.Gender;
+import com.hieu.ecommerce.common.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -45,6 +46,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @EnumPattern(name = "status", regexp = "^(ACTIVE|INACTIVE|NONE)$", message = "Status must be one of: ACTIVE, INACTIVE, NONE")
     @Builder.Default
     private UserStatus  status = UserStatus.ACTIVE;
 

@@ -1,5 +1,6 @@
-package com.hieu.ecommerce.validator;
+package com.hieu.ecommerce.common.validator;
 
+import com.hieu.ecommerce.common.anotation.PhoneNumber;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

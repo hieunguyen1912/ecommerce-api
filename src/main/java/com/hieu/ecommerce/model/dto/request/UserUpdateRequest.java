@@ -19,7 +19,7 @@ import static com.hieu.ecommerce.common.enums.Gender.*;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SignUpRequest {
+public class UserUpdateRequest {
     @NotBlank(message = "firstName is required")
     @Size(max = 50, message = "First name must not exceed 50 characters")
     private String firstName;
@@ -42,20 +42,8 @@ public class SignUpRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date dateOfBirth;
 
-    @GenderSubset(anyOf = {MALE, FEMALE, OTHER})
+    @GenderSubset(anyOf = { MALE, FEMALE, OTHER})
     private Gender gender;
 
     private String avatarUrl;
-
-    @NotBlank(message = "password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
-    private String password;
-
-    @NotBlank(message = "Confirm password is required")
-    private String confirmPassword;
-
-    @AssertTrue(message = "Password and confirm password must match")
-    public boolean isPasswordMatching() {
-        return password != null && password.equals(confirmPassword);
-    }
 }
