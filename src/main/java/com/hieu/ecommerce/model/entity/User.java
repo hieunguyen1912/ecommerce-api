@@ -36,7 +36,7 @@ public class User {
     private String password;
 
     @Column(unique = true, nullable = false)
-    private String phoneNumber;
+    private String phone;
 
     @Column(name = "date_of_birth", nullable = false)
     @Temporal(TemporalType.DATE)

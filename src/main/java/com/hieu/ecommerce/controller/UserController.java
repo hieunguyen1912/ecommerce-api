@@ -1,12 +1,15 @@
 package com.hieu.ecommerce.controller;
 
+import com.hieu.ecommerce.model.dto.request.SignUpRequest;
 import com.hieu.ecommerce.model.dto.request.UserUpdateRequest;
 import com.hieu.ecommerce.model.dto.response.PageResponse;
 import com.hieu.ecommerce.model.dto.response.UserResponseDTO;
+import com.hieu.ecommerce.model.dto.response.UserSignUpResponse;
 import com.hieu.ecommerce.service.UserService;
 import com.hieu.ecommerce.common.anotation.ResponseMessage;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +23,12 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    @PostMapping("/register")
+    @ResponseMessage("User registered successfully")
+    public ResponseEntity<UserSignUpResponse> register(@Valid @RequestBody SignUpRequest signUpRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(signUpRequest));
     }
 
     @GetMapping()
@@ -53,5 +62,11 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/test-token")
+    @ResponseMessage("Token is valid")
+    public ResponseEntity<String> testToken() {
+        return ResponseEntity.ok("Token is still valid!");
     }
 }
