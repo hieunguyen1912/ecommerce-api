@@ -20,7 +20,7 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserResponseDTO> getAllUsers(Pageable pageable) {
-         return userRepository.findAll(pageable)
+        return userRepository.findAll(pageable)
                 .stream()
                 .map(userMapper::toResponseDTO)
                 .toList();
