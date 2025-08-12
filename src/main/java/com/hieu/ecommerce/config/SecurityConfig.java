@@ -46,7 +46,7 @@ public class SecurityConfig {
          http.csrf(AbstractHttpConfigurer::disable)
              .authorizeHttpRequests(auth -> auth
                  .requestMatchers("/api/v1/users/register", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
-                 .anyRequest().authenticated())
+                 .anyRequest().permitAll())
              .oauth2ResourceServer(oauth2 -> oauth2
                          .jwt(jwt -> jwt
                              .jwtAuthenticationConverter(jwtAuthenticationConverter())

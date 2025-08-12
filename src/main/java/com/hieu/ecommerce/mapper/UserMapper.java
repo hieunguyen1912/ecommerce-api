@@ -2,7 +2,7 @@ package com.hieu.ecommerce.mapper;
 
 import com.hieu.ecommerce.model.dto.request.SignUpRequest;
 import com.hieu.ecommerce.model.dto.request.UserUpdateRequest;
-import com.hieu.ecommerce.model.dto.response.UserResponseDTO;
+import com.hieu.ecommerce.model.dto.response.UserResponse;
 import com.hieu.ecommerce.model.dto.response.UserSignUpResponse;
 import com.hieu.ecommerce.model.entity.User;
 import org.mapstruct.Mapper;
@@ -18,7 +18,7 @@ public interface UserMapper {
     UserSignUpResponse toSignUpResponse(User user);
 
     @Mapping(target = "fullName", expression = "java(user.getFirstName() + \" \" + user.getLastName())")
-    UserResponseDTO toResponseDTO(User user);
+    UserResponse toResponseDTO(User user);
 
     void updateUser(@MappingTarget User user, UserUpdateRequest userUpdateRequest);
 }

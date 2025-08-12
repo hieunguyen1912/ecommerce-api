@@ -17,6 +17,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = {
             ResourceNotFoundException.class,
             EmailExistsException.class,
+            IllegalArgumentException.class
     })
     public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(RuntimeException ex) {
         ApiResponse<Object> apiResponse = new ApiResponse<>();

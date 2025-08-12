@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.Date;
 
 @Data
-public class UserResponseDTO {
+public class UserResponse {
 
     private Long id;
     private String fullName;

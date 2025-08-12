@@ -4,7 +4,7 @@ import com.hieu.ecommerce.common.anotation.ResponseMessage;
 import com.hieu.ecommerce.model.dto.request.LoginRequest;
 import com.hieu.ecommerce.model.dto.request.RefreshTokenRequest;
 import com.hieu.ecommerce.model.dto.response.LoginResult;
-import com.hieu.ecommerce.model.dto.response.ResponseLoginDTO;
+import com.hieu.ecommerce.model.dto.response.ResponseLogin;
 import com.hieu.ecommerce.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,14 +27,14 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseMessage("Login successful")
-    public ResponseEntity<ResponseLoginDTO> login(
+    public ResponseEntity<ResponseLogin> login(
             @Valid @RequestBody LoginRequest loginRequest
     ) {
         LoginResult loginResult = authService.login(loginRequest);
 
-        ResponseLoginDTO responseLoginDTO = new ResponseLoginDTO();
-        responseLoginDTO.setAccessToken(loginResult.getAccessToken());
-        responseLoginDTO.setUserInfo(loginResult.getUserInfo());
+        ResponseLogin responseLogin = new ResponseLogin();
+        responseLogin.setAccessToken(loginResult.getAccessToken());
+        responseLogin.setUserInfo(loginResult.getUserInfo());
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", loginResult.getRefreshToken())
                 .httpOnly(true)
@@ -46,18 +46,18 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .header("Set-Cookie", refreshTokenCookie.toString())
-                .body(responseLoginDTO);
+                .body(responseLogin);
     }
 
     @PostMapping("/refresh")
     @ResponseMessage("Token refreshed successfully")
-    public ResponseEntity<ResponseLoginDTO> refreshToken(@CookieValue(name = "refreshToken", defaultValue = "") String refreshToken) {
+    public ResponseEntity<ResponseLogin> refreshToken(@CookieValue(name = "refreshToken", defaultValue = "") String refreshToken) {
         RefreshTokenRequest refreshTokenRequest = new RefreshTokenRequest(refreshToken);
         LoginResult loginResult = authService.refreshToken(refreshTokenRequest);
 
-        ResponseLoginDTO responseLoginDTO = new ResponseLoginDTO();
-        responseLoginDTO.setAccessToken(loginResult.getAccessToken());
-        responseLoginDTO.setUserInfo(loginResult.getUserInfo());
+        ResponseLogin responseLogin = new ResponseLogin();
+        responseLogin.setAccessToken(loginResult.getAccessToken());
+        responseLogin.setUserInfo(loginResult.getUserInfo());
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", loginResult.getRefreshToken())
                 .httpOnly(true)
@@ -69,7 +69,7 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .header("Set-Cookie", refreshTokenCookie.toString())
-                .body(responseLoginDTO);
+                .body(responseLogin);
     }
 
     @PostMapping("/logout")

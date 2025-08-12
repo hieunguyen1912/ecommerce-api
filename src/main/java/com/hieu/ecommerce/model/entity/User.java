@@ -8,7 +8,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 
@@ -19,7 +18,7 @@ import java.util.Set;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class User {
+public class User extends Auditable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -65,20 +64,4 @@ public class User {
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    @PrePersist
-    private void onCreate() {
-        createdAt = Instant.now();
-    }
-
-    @PreUpdate
-    private void onUpdate() {
-        updatedAt = Instant.now();
-    }
 }

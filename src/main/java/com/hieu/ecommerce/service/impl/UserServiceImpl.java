@@ -5,7 +5,7 @@ import com.hieu.ecommerce.exception.ResourceNotFoundException;
 import com.hieu.ecommerce.mapper.UserMapper;
 import com.hieu.ecommerce.model.dto.request.SignUpRequest;
 import com.hieu.ecommerce.model.dto.request.UserUpdateRequest;
-import com.hieu.ecommerce.model.dto.response.UserResponseDTO;
+import com.hieu.ecommerce.model.dto.response.UserResponse;
 import com.hieu.ecommerce.model.dto.response.UserSignUpResponse;
 import com.hieu.ecommerce.model.entity.User;
 import com.hieu.ecommerce.repository.UserRepository;
@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponseDTO> getAllUsers(Pageable pageable) {
+    public List<UserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable)
                 .stream()
                 .map(userMapper::toResponseDTO)
@@ -37,14 +37,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponseDTO getUserById(Long id) {
+    public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return userMapper.toResponseDTO(user);
     }
 
     @Override
-    public UserResponseDTO updateUser(Long id, UserUpdateRequest userUpdateRequest) {
+    public UserResponse updateUser(Long id, UserUpdateRequest userUpdateRequest) {
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
             new ResourceNotFoundException("User not found with id: " + id));
