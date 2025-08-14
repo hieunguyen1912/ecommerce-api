@@ -39,6 +39,8 @@ public class UpdateProductRequest {
     @Valid
     private List<UpdateProductImageRequest> newImages;
 
+    private List<Long> categoryIds;
+
     // Danh sách variants (chỉ khi hasVariants = true)
     @Valid
     private List<UpdateProductVariantRequest> variants;

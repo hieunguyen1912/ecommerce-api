@@ -6,6 +6,7 @@ import com.hieu.ecommerce.model.dto.request.UpdateProductRequest;
 import com.hieu.ecommerce.model.dto.request.UpdateProductVariantRequest;
 import com.hieu.ecommerce.model.dto.request.UpdateProductImageRequest;
 import com.hieu.ecommerce.model.entity.*;
+import com.hieu.ecommerce.repository.ProductRepository;
 import com.hieu.ecommerce.repository.ProductVariantRepository;
 import com.hieu.ecommerce.service.AttributeValueService;
 import com.hieu.ecommerce.service.ProductValidationService;
@@ -41,13 +42,15 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
     private final ProductVariantRepository productVariantRepository;
     private final AttributeValueService attributeValueService;
     private final ProductValidationService productValidationService;
+    private final ProductRepository productRepository;
 
     public ProductVariantServiceImpl(ProductVariantRepository productVariantRepository,
                                      AttributeValueService attributeValueService,
-                                     ProductValidationService productValidationService) {
+                                     ProductValidationService productValidationService, ProductRepository productRepository) {
         this.productVariantRepository = productVariantRepository;
         this.attributeValueService = attributeValueService;
         this.productValidationService = productValidationService;
+        this.productRepository = productRepository;
     }
 
     @Override
@@ -155,6 +158,7 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
             if (!CollectionUtils.isEmpty(product.getProductVariant())) {
                 logger.info("Clearing all variants for product: {}", product.getName());
                 product.getProductVariant().clear();
+                productRepository.flush();
             }
             return;
         }
@@ -171,6 +175,7 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
                 !keepVariantIds.contains(variant.getId()));
         int removedCount = initialSize - product.getProductVariant().size();
         if (removedCount > 0) {
+            productRepository.flush();
             logger.info("Removed {} variants from product: {}", removedCount, product.getName());
         }
 

@@ -18,5 +18,6 @@ public class ProductResponse {
     private boolean hasVariants;
     private Instant createdAt;
     private List<String> imageUrls;
+    private List<CategoryResponse> categories;
     private List<ProductVariantResponse> variants;
 }

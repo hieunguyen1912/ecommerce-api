@@ -26,6 +26,8 @@ public class CreateProductRequest {
     @Size(max = 10, message = "Maximum 10 images allowed")
     private List<String> imageUrls;
 
+    private List<Long> categoryIds;
+
     //if hasVariants = true
     private List<CreateProductVariantRequest> variants;
 }

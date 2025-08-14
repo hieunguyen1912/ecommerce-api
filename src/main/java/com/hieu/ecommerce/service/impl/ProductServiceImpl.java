@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.data.domain.Pageable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.Objects;
@@ -59,6 +60,17 @@ public class ProductServiceImpl implements ProductService {
         Product product = productMapper.toProduct(request);
         boolean hasVariants = hasVariants(request);
         product.setHasVariants(hasVariants);
+
+        if (request.getCategoryIds() != null) {
+            List<Category> categories = request.getCategoryIds().stream().map(
+                    id -> {
+                        Category category = new Category();
+                        category.setId(id);
+                        return category;
+                    }
+            ).toList();
+            product.setCategories(categories);
+        }
         
         Product savedProduct = productRepository.save(product);
         
@@ -174,6 +186,17 @@ public class ProductServiceImpl implements ProductService {
         
         if (updateProductRequest.getDescription() != null) {
             product.setDescription(updateProductRequest.getDescription().trim());
+        }
+
+        if (updateProductRequest.getCategoryIds() != null) {
+            List<Category> categories = updateProductRequest.getCategoryIds().stream().map(
+                    id -> {
+                        Category category = new Category();
+                        category.setId(id);
+                        return category;
+                    }
+            ).toList();
+            product.setCategories(categories);
         }
 
         // Handle price and stock quantity based on variant configuration

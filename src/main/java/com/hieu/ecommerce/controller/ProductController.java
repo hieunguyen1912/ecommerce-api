@@ -3,7 +3,6 @@ package com.hieu.ecommerce.controller;
 import com.hieu.ecommerce.common.anotation.ResponseMessage;
 import com.hieu.ecommerce.model.dto.request.CreateProductRequest;
 import com.hieu.ecommerce.model.dto.request.UpdateProductRequest;
-import com.hieu.ecommerce.model.dto.response.ApiResponse;
 import com.hieu.ecommerce.model.dto.response.PageResponse;
 import com.hieu.ecommerce.model.dto.response.ProductResponse;
 import com.hieu.ecommerce.model.dto.response.ProductSummaryResponse;
