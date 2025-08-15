@@ -44,6 +44,7 @@ public class Shop extends Auditable{
 
     @Enumerated(EnumType.STRING)
     @EnumPattern(name = "Shop status", regexp = "^(ACTIVE|INACTIVE|SUSPENDED)$", message = "Shop status must be one of: ACTIVE, INACTIVE, SUSPENDED")
+    @Column(nullable = false)
     private ShopStatus status = ShopStatus.ACTIVE;
 
     @OneToMany(mappedBy = "shop", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})

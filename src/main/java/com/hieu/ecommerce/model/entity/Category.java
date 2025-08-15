@@ -1,5 +1,6 @@
 package com.hieu.ecommerce.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,6 +31,7 @@ public class Category extends Auditable {
     @ManyToMany(mappedBy = "categories",
             fetch = FetchType.LAZY,
             cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JsonIgnore
     private List<Product> products = new ArrayList<>();
 
     public Category(Long id) {

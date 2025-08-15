@@ -26,8 +26,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         System.out.println("Loading user by username: " + username);
 
-         User user = userRepository.findByEmail(username)
+        User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + username));
+
+        System.out.println("User found: " + user.getPassword());
 
         Set<SimpleGrantedAuthority> authorities = new HashSet<>();
 
@@ -43,10 +45,11 @@ public class CustomUserDetailsService implements UserDetailsService {
             }
         }
 
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .authorities(authorities)
-                .build();
+        return new CustomUserDetails(
+                user.getId(),
+                user.getEmail(),
+                user.getPassword(),
+                authorities
+        );
     }
 }

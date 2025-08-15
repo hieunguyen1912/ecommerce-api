@@ -14,17 +14,17 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(value = {
-            ResourceNotFoundException.class,
-            EmailExistsException.class,
-            IllegalArgumentException.class
-    })
-    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(RuntimeException ex) {
-        ApiResponse<Object> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage(ex.getMessage());
-        return ResponseEntity.status(404)
-                .body(apiResponse);
-    }
+//    @ExceptionHandler(value = {
+//            ResourceNotFoundException.class,
+//            EmailExistsException.class,
+//            IllegalArgumentException.class
+//    })
+//    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(RuntimeException ex) {
+//        ApiResponse<Object> apiResponse = new ApiResponse<>();
+//        apiResponse.setMessage(ex.getMessage());
+//        return ResponseEntity.status(404)
+//                .body(apiResponse);
+//    }
 
     @ExceptionHandler(RefreshTokenException.class)
     public ResponseEntity<ApiResponse<Object>> handleRefreshTokenException(RefreshTokenException ex) {

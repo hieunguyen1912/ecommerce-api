@@ -73,7 +73,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public LoginResult login(LoginRequest loginRequest) {
         
-        logger.info("Attempting login for user: {}", loginRequest.getEmail());
+        logger.info("Attempting login for user: {}", loginRequest.getPassword());
         
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginRequest.getEmail(),
@@ -171,10 +171,6 @@ public class AuthServiceImpl implements AuthService {
                 });
     }
 
-    /**
-     * Clean up expired refresh tokens from database
-     * This method should be called periodically (e.g., via scheduled task)
-     */
     @Transactional
     public void cleanupExpiredRefreshTokens() {
         Instant now = Instant.now();
