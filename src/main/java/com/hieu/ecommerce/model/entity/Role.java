@@ -1,5 +1,6 @@
 package com.hieu.ecommerce.model.entity;
 
+import com.hieu.ecommerce.common.enums.RoleName;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,7 +17,9 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, unique = true)
+    private RoleName roleName;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

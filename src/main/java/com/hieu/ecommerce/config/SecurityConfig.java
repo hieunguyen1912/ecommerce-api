@@ -42,7 +42,7 @@ public class SecurityConfig {
     }
 
      @Bean
-     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+     public SecurityFilterChain securityFilterChain(HttpSecurity http, CustomAccessDeniedHandler customAccessDeniedHandler) throws Exception {
          http.csrf(AbstractHttpConfigurer::disable)
              .authorizeHttpRequests(auth -> auth
                  .requestMatchers("/api/v1/users/register", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
@@ -53,6 +53,7 @@ public class SecurityConfig {
                              .decoder(jwtDecoder())
                          )
                          .authenticationEntryPoint(customAuthenticationEntryPoint)
+                     .accessDeniedHandler(customAccessDeniedHandler)
              )
              .sessionManagement(session -> session
                          .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

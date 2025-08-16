@@ -12,6 +12,7 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "roles", ignore = true)
     User toEntity(SignUpRequest signUpRequest);
 
     @Mapping(target = "fullName", expression = "java(user.getFirstName() + \" \" + user.getLastName())")

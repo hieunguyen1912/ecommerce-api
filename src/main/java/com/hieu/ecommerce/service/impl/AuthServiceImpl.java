@@ -1,5 +1,6 @@
 package com.hieu.ecommerce.service.impl;
 
+import com.hieu.ecommerce.common.enums.RoleName;
 import com.hieu.ecommerce.exception.RefreshTokenException;
 import com.hieu.ecommerce.exception.ResourceNotFoundException;
 import com.hieu.ecommerce.model.dto.request.LoginRequest;
@@ -220,8 +221,8 @@ public class AuthServiceImpl implements AuthService {
 
         // Optimize roles and permissions extraction
         // Lấy roles và permissions của user
-        Set<String> roles = user.getRoles().stream()
-                .map(Role::getName)
+        Set<RoleName> roles = user.getRoles().stream()
+                .map(Role::getRoleName)
                 .collect(Collectors.toSet());
 
         Set<String> permissions = user.getRoles().stream()

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hieu.ecommerce.common.anotation.GenderSubset;
 import com.hieu.ecommerce.common.anotation.PhoneNumber;
 import com.hieu.ecommerce.common.enums.Gender;
+import com.hieu.ecommerce.common.enums.RoleName;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -46,6 +47,8 @@ public class SignUpRequest {
     private Gender gender;
 
     private String avatarUrl;
+
+    private RoleName roleName;
 
     @NotBlank(message = "password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
