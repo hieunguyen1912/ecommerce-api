@@ -6,11 +6,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShopResponse {
+public class ShopDetailResponseDTO  {
     private String shopName;
     private String description;
     private String address;
@@ -19,4 +21,5 @@ public class ShopResponse {
     private String logoUrl;
     private ShopStatus status;
     private String ownerName;
+    private List<ProductSummaryResponse> products;
 }
