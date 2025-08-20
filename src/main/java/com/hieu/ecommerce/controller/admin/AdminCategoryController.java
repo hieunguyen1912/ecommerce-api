@@ -1,6 +1,6 @@
-package com.hieu.ecommerce.controller;
+package com.hieu.ecommerce.controller.admin;
 
-import com.hieu.ecommerce.common.anotation.ResponseMessage;
+import com.hieu.ecommerce.common.annotation.ResponseMessage;
 import com.hieu.ecommerce.model.dto.request.CategoryRequest;
 import com.hieu.ecommerce.model.dto.response.CategoryResponse;
 import com.hieu.ecommerce.model.dto.response.PageResponse;
@@ -15,10 +15,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/categories")
-public class CategoryController {
+public class AdminCategoryController {
     private final CategoryService categoryService;
 
-    public CategoryController(CategoryService categoryService) {
+    public AdminCategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
 
@@ -57,7 +57,7 @@ public class CategoryController {
                 category,
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
-                category.size() // Assuming the size of the list is the total count for simplicity
+                category.size()
         ));
     }
 }

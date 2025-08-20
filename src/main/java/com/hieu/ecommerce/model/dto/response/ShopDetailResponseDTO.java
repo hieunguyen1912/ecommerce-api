@@ -1,6 +1,6 @@
 package com.hieu.ecommerce.model.dto.response;
 
-import com.hieu.ecommerce.common.enums.ShopStatus;
+import com.hieu.ecommerce.common.constant.ShopStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

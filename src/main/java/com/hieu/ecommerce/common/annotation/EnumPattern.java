@@ -1,7 +1,6 @@
-package com.hieu.ecommerce.common.anotation;
+package com.hieu.ecommerce.common.annotation;
 
-import com.hieu.ecommerce.common.enums.Gender;
-import com.hieu.ecommerce.common.validator.GenderSubSetValidator;
+import com.hieu.ecommerce.common.validator.EnumPatternValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
@@ -13,12 +12,13 @@ import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Documented
-@Target({METHOD, FIELD})
 @Retention(RUNTIME)
-@Constraint(validatedBy = GenderSubSetValidator.class)
-public @interface GenderSubset {
-    Gender[] anyOf();
-    String message() default "must be any of {anyOf}";
+@Target({METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE})
+@Constraint(validatedBy = EnumPatternValidator.class)
+public @interface EnumPattern {
+    String name();
+    String regexp();
+    String message() default "{name} must match {regexp}";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

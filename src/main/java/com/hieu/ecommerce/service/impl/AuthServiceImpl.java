@@ -1,6 +1,6 @@
 package com.hieu.ecommerce.service.impl;
 
-import com.hieu.ecommerce.common.enums.RoleName;
+import com.hieu.ecommerce.common.constant.RoleName;
 import com.hieu.ecommerce.exception.RefreshTokenException;
 import com.hieu.ecommerce.exception.ResourceNotFoundException;
 import com.hieu.ecommerce.model.dto.request.LoginRequest;
@@ -234,6 +234,7 @@ public class AuthServiceImpl implements AuthService {
                 .issuedAt(now)
                 .expiresAt(validity)
                 .subject(user.getEmail())
+                .claim("userId", user.getId())
                 .claim("roles", roles)
                 .claim("permissions", permissions)
                 .build();

@@ -1,7 +1,7 @@
 package com.hieu.ecommerce.model.entity;
 
-import com.hieu.ecommerce.common.anotation.EnumPattern;
-import com.hieu.ecommerce.common.enums.ShopStatus;
+import com.hieu.ecommerce.common.annotation.EnumPattern;
+import com.hieu.ecommerce.common.constant.ShopStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -43,7 +43,7 @@ public class Shop extends Auditable{
     private String logoUrl;
 
     @Enumerated(EnumType.STRING)
-    @EnumPattern(name = "Shop status", regexp = "^(ACTIVE|INACTIVE|SUSPENDED)$", message = "Shop status must be one of: ACTIVE, INACTIVE, SUSPENDED")
+    @EnumPattern(name = "Shop status", regexp = "^(ACTIVE|INACTIVE|DELETED)$", message = "Shop status must be one of: ACTIVE, INACTIVE, DELETED")
     @Column(nullable = false)
     private ShopStatus status = ShopStatus.ACTIVE;
 

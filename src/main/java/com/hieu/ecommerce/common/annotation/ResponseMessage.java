@@ -1,4 +1,4 @@
-package com.hieu.ecommerce.common.anotation;
+package com.hieu.ecommerce.common.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

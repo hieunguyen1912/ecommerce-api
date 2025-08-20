@@ -29,4 +29,11 @@ public class SecurityUtil {
         }
         return null;
     }
+
+    public static Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        return jwt.getClaim("userId");
+    }
 }

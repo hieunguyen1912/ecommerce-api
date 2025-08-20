@@ -1,6 +1,6 @@
 package com.hieu.ecommerce.repository;
 
-import com.hieu.ecommerce.common.enums.ShopStatus;
+import com.hieu.ecommerce.common.constant.ShopStatus;
 import com.hieu.ecommerce.model.entity.Shop;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,4 +20,5 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
 
     Page<Shop> findAllByStatus(ShopStatus status, Pageable pageable);
     Optional<Shop> findByIdAndStatus(Long id, ShopStatus status);
+    Optional<Shop> findByUserIdAndStatus(Long userId, ShopStatus status);
 }

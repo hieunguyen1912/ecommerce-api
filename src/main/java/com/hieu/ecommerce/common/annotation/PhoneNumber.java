@@ -1,4 +1,4 @@
-package com.hieu.ecommerce.common.anotation;
+package com.hieu.ecommerce.common.annotation;
 
 import com.hieu.ecommerce.common.validator.PhoneValidator;
 import jakarta.validation.Constraint;

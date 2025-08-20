@@ -1,6 +1,6 @@
 package com.hieu.ecommerce.model.dto.request;
 
-import com.hieu.ecommerce.common.anotation.PhoneNumber;
+import com.hieu.ecommerce.common.annotation.PhoneNumber;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

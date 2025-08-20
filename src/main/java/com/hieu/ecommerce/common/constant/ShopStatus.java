@@ -1,12 +1,12 @@
-package com.hieu.ecommerce.common.enums;
+package com.hieu.ecommerce.common.constant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public enum UserStatus {
+public enum ShopStatus {
     @JsonProperty("active")
     ACTIVE,
     @JsonProperty("inactive")
     INACTIVE,
-    @JsonProperty("none")
-    NONE
+    @JsonProperty("deleted")
+    DELETED
 }

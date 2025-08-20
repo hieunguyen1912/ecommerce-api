@@ -4,11 +4,11 @@ import com.hieu.ecommerce.exception.ResourceNotFoundException;
 import com.hieu.ecommerce.model.dto.request.CreateProductVariantRequest;
 import com.hieu.ecommerce.model.dto.request.UpdateProductRequest;
 import com.hieu.ecommerce.model.dto.request.UpdateProductVariantRequest;
-import com.hieu.ecommerce.model.dto.request.UpdateProductImageRequest;
 import com.hieu.ecommerce.model.entity.*;
 import com.hieu.ecommerce.repository.ProductRepository;
 import com.hieu.ecommerce.repository.ProductVariantRepository;
 import com.hieu.ecommerce.service.AttributeValueService;
+import com.hieu.ecommerce.service.ImageService;
 import com.hieu.ecommerce.service.ProductValidationService;
 
 import io.micrometer.common.util.StringUtils;
@@ -19,15 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Service
+@Transactional
 public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.ProductVariantService {
     private static final Logger logger = LoggerFactory.getLogger(ProductVariantServiceImpl.class);
 
@@ -41,21 +38,35 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
 
     private final ProductVariantRepository productVariantRepository;
     private final AttributeValueService attributeValueService;
-    private final ProductValidationService productValidationService;
     private final ProductRepository productRepository;
+    private final ImageService imageService;
 
     public ProductVariantServiceImpl(ProductVariantRepository productVariantRepository,
                                      AttributeValueService attributeValueService,
-                                     ProductValidationService productValidationService, ProductRepository productRepository) {
+                                     ProductRepository productRepository, ImageService imageService) {
         this.productVariantRepository = productVariantRepository;
         this.attributeValueService = attributeValueService;
-        this.productValidationService = productValidationService;
         this.productRepository = productRepository;
+        this.imageService = imageService;
     }
 
     @Override
-    @Transactional
-    public void createProductVariant(CreateProductVariantRequest request, Product product) {
+    public void createProductVariants(List<CreateProductVariantRequest> variantRequests, Product product) {
+        logger.info("Creating {} variants for product: {}", variantRequests.size(), product.getName());
+
+        List<ProductVariant> variants = new ArrayList<>();
+        variantRequests.forEach(
+                variantRequest -> variants.add(
+                        createSingleVariant(variantRequest, product)
+                )
+        );
+
+        product.getProductVariant().clear();
+        product.getProductVariant().addAll(variants);
+    }
+
+    @Override
+    public ProductVariant createSingleVariant(CreateProductVariantRequest request, Product product) {
         validateCreateProductVariantRequest(request);
 
         if (productVariantRepository.existsByProductAndSku(product, request.getSku())) {
@@ -64,9 +75,11 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
 
         ProductVariant productVariant = buildProductVariant(request, product);
         product.getProductVariant().add(productVariant);
-        
+
         logger.debug("Successfully created variant with SKU: {} for product: {}", 
                     productVariant.getSku(), product.getName());
+
+        return productVariant;
     }
 
     private void validateCreateProductVariantRequest(CreateProductVariantRequest request) {
@@ -104,52 +117,13 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
 
         // Set images
         if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
-            List<ProductVariantImage> images = buildVariantImages(request.getImageUrls(), productVariant);
+            List<ProductVariantImage> images = request.getImageUrls()
+                    .stream().map(req -> imageService.buildProductVariantImage(req, productVariant, true))
+                    .toList();
             productVariant.setImages(images);
         }
 
         return productVariant;
-    }
-
-    private List<ProductVariantImage> buildVariantImages(List<String> imageUrls, ProductVariant productVariant) {
-        return IntStream.range(0, imageUrls.size())
-                .mapToObj(i -> buildVariantImage(imageUrls.get(i), productVariant, i == 0))
-                .toList();
-    }
-
-    private ProductVariantImage buildVariantImage(String imageUrl, ProductVariant productVariant, boolean isDefault) {
-        ProductVariantImage image = new ProductVariantImage();
-        image.setProductVariant(productVariant);
-        image.setImageUrl(imageUrl);
-        image.setDefault(isDefault);
-        return image;
-    }
-
-    public void updateVariantImages(ProductVariant productVariant, UpdateProductVariantRequest variantReq) {
-        // Handle existing images to keep
-        if (!CollectionUtils.isEmpty(variantReq.getKeepImageIds())) {
-            int initialImageCount = productVariant.getImages().size();
-            productVariant.getImages().removeIf(
-                    image -> !variantReq.getKeepImageIds().contains(image.getId())
-            );
-            int removedCount = initialImageCount - productVariant.getImages().size();
-            if (removedCount > 0) {
-                logger.debug("Removed {} images from variant: {}", removedCount, productVariant.getSku());
-            }
-        } else {
-            // Clear all existing images if no keepImageIds specified
-            if (!CollectionUtils.isEmpty(productVariant.getImages())) {
-                logger.debug("Clearing all images for variant: {}", productVariant.getSku());
-                productVariant.getImages().clear();
-            }
-        }
-
-        // Add new images
-        if (!CollectionUtils.isEmpty(variantReq.getNewImages())) {
-            List<ProductVariantImage> newImages = buildVariantImagesFromUpdateRequests(variantReq.getNewImages(), productVariant);
-            productVariant.getImages().addAll(newImages);
-            logger.debug("Added {} new images to variant: {}", newImages.size(), productVariant.getSku());
-        }
     }
 
     @Override
@@ -202,7 +176,7 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
         logger.info("Creating new variant for product: {}, SKU: {}", product.getName(), variantReq.getSku());
         
         // Validate variant request
-        productValidationService.validateVariantRequest(variantReq);
+        validateVariantRequest(variantReq);
         
         ProductVariant variant = new ProductVariant();
         variant.setSku(variantReq.getSku().trim());
@@ -212,9 +186,12 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
 
         // Add images if provided
         if (!CollectionUtils.isEmpty(variantReq.getNewImages())) {
-            List<ProductVariantImage> images = buildVariantImagesFromUpdateRequests(variantReq.getNewImages(), variant);
-            variant.setImages(images);
-            logger.debug("Added {} images to new variant: {}", images.size(), variant.getSku());
+            List<ProductVariantImage> newImages = variantReq.getNewImages()
+                    .stream().map(
+                            request -> imageService.buildProductVariantImage(request.getImageUrl(), variant, request.isDefault())
+                    ).toList();
+            variant.setImages(newImages);
+            logger.debug("Added {} images to new variant: {}", newImages.size(), variant.getSku());
         }
 
         // Add attribute values
@@ -230,7 +207,7 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
         logger.info("Updating existing variant with id: {} for product: {}", variantReq.getId(), productName);
 
         // Validate variant request
-        productValidationService.validateVariantRequest(variantReq);
+       validateVariantRequest(variantReq);
 
         // Update basic variant information
         productVariant.setSku(variantReq.getSku().trim());
@@ -238,7 +215,7 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
         productVariant.setStockQuantity(variantReq.getStockQuantity());
 
         // Update variant images
-        updateVariantImages(productVariant, variantReq);
+        imageService.updateVariantImages(productVariant, variantReq);
 
         // Update variant attribute values
         attributeValueService.replaceVariantAttributeValues(productVariant, variantReq.getAttributeValues());
@@ -246,14 +223,18 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
         logger.info("Successfully updated variant with id: {} for product: {}", variantReq.getId(), productName);
     }
 
-    private List<ProductVariantImage> buildVariantImagesFromUpdateRequests(List<UpdateProductImageRequest> newImages, ProductVariant owner) {
-        return newImages.stream()
-                .map(imageRequest -> {
-                    ProductVariantImage image = new ProductVariantImage();
-                    image.setDefault(imageRequest.isDefault());
-                    image.setImageUrl(imageRequest.getImageUrl());
-                    image.setProductVariant(owner);
-                    return image;
-                }).collect(Collectors.toList());
+    public void validateVariantRequest(UpdateProductVariantRequest variantReq) {
+        if (variantReq.getSku() == null || variantReq.getSku().trim().isEmpty()) {
+            throw new IllegalArgumentException("SKU cannot be null or empty");
+        }
+        if (variantReq.getPrice() == null || variantReq.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Variant price must be greater than 0");
+        }
+        if (variantReq.getStockQuantity() == null || variantReq.getStockQuantity() < 0) {
+            throw new IllegalArgumentException("Variant stock quantity cannot be negative");
+        }
+        if (variantReq.getAttributeValues() == null || variantReq.getAttributeValues().isEmpty()) {
+            throw new IllegalArgumentException("Variant must have at least one attribute value");
+        }
     }
 }

@@ -1,7 +1,7 @@
 package com.hieu.ecommerce.model.entity;
 
-import com.hieu.ecommerce.common.anotation.EnumPattern;
-import com.hieu.ecommerce.common.enums.ProductStatus;
+import com.hieu.ecommerce.common.annotation.EnumPattern;
+import com.hieu.ecommerce.common.constant.ProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,7 +42,7 @@ public class Product extends Auditable{
     private List<Category> categories;
 
     @Enumerated(EnumType.STRING)
-    @EnumPattern(name = "Product status", regexp = "^(ACTIVE|INACTIVE|SUSPENDED)$", message = "Product status must be one of: ACTIVE, INACTIVE, SUSPENDED")
+    @EnumPattern(name = "Product status", regexp = "^(ACTIVE|INACTIVE|DELETED|OUT_OF_STOCK)$", message = "Product status must be one of: ACTIVE, INACTIVE, DELETED")
     //@Column(nullable = false)
     private ProductStatus status = ProductStatus.ACTIVE;
 

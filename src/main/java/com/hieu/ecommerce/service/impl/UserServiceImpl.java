@@ -1,6 +1,5 @@
 package com.hieu.ecommerce.service.impl;
 
-import com.hieu.ecommerce.common.enums.RoleName;
 import com.hieu.ecommerce.exception.EmailExistsException;
 import com.hieu.ecommerce.exception.ResourceNotFoundException;
 import com.hieu.ecommerce.mapper.UserMapper;

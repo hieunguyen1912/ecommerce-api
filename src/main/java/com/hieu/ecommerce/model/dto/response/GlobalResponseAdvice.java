@@ -1,6 +1,6 @@
 package com.hieu.ecommerce.model.dto.response;
 
-import com.hieu.ecommerce.common.anotation.ResponseMessage;
+import com.hieu.ecommerce.common.annotation.ResponseMessage;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

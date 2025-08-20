@@ -1,4 +1,4 @@
-package com.hieu.ecommerce.common.enums;
+package com.hieu.ecommerce.common.constant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

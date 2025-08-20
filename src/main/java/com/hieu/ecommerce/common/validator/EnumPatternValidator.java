@@ -1,6 +1,6 @@
 package com.hieu.ecommerce.common.validator;
 
-import com.hieu.ecommerce.common.anotation.EnumPattern;
+import com.hieu.ecommerce.common.annotation.EnumPattern;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

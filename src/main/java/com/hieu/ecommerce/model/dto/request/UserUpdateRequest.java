@@ -1,9 +1,9 @@
 package com.hieu.ecommerce.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.hieu.ecommerce.common.anotation.GenderSubset;
-import com.hieu.ecommerce.common.anotation.PhoneNumber;
-import com.hieu.ecommerce.common.enums.Gender;
+import com.hieu.ecommerce.common.annotation.GenderSubset;
+import com.hieu.ecommerce.common.annotation.PhoneNumber;
+import com.hieu.ecommerce.common.constant.Gender;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 
-import static com.hieu.ecommerce.common.enums.Gender.*;
+import static com.hieu.ecommerce.common.constant.Gender.*;
 
 @Setter
 @Getter
