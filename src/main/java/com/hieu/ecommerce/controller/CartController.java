@@ -47,4 +47,12 @@ public class CartController {
         cartService.clearCart(userId);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping
+    @ResponseMessage("Get user cart successfully")
+    public ResponseEntity<CartResponseDTO> getCart() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        CartResponseDTO cartResponseDTO = cartService.getCart(userId);
+        return ResponseEntity.ok(cartResponseDTO);
+    }
 }

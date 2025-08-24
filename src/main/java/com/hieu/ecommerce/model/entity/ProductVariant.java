@@ -2,7 +2,6 @@ package com.hieu.ecommerce.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hieu.ecommerce.common.annotation.EnumPattern;
-import com.hieu.ecommerce.common.constant.ProductStatus;
 import com.hieu.ecommerce.common.constant.VariantStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
