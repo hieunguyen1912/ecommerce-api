@@ -4,6 +4,7 @@ import com.hieu.ecommerce.common.SecurityUtil;
 import com.hieu.ecommerce.common.constant.ProductStatus;
 import com.hieu.ecommerce.common.constant.RoleName;
 import com.hieu.ecommerce.common.constant.ShopStatus;
+import com.hieu.ecommerce.common.constant.VariantStatus;
 import com.hieu.ecommerce.exception.ResourceNotFoundException;
 import com.hieu.ecommerce.mapper.ProductMapper;
 import com.hieu.ecommerce.model.dto.request.CreateProductRequest;
@@ -11,7 +12,6 @@ import com.hieu.ecommerce.model.dto.request.UpdateProductRequest;
 import com.hieu.ecommerce.model.dto.response.ProductResponse;
 import com.hieu.ecommerce.model.dto.response.ProductSummaryResponse;
 import com.hieu.ecommerce.model.entity.*;
-import com.hieu.ecommerce.repository.CategoryRepository;
 import com.hieu.ecommerce.repository.ProductRepository;
 import com.hieu.ecommerce.repository.ShopRepository;
 import com.hieu.ecommerce.service.ProductService;
@@ -182,6 +182,22 @@ public class ProductServiceImpl implements ProductService {
         return getProduct(id, RoleName.USER);
     }
 
+    @Override
+    public Product getActiveProduct(Long id) {
+        return productRepository.findByIdAndStatus(id, ProductStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+    }
+
+    @Override
+    public void validateStock(Product product, ProductVariant productVariant, Integer requiredQuantity) {
+        int availableStock = productVariant != null ? productVariant.getStockQuantity() : product.getStockQuantity();
+        String itemName = productVariant != null ? "Product variant" : "Product";
+
+        if (requiredQuantity > availableStock) {
+            throw new IllegalStateException(itemName + " out of stock. Available: " + availableStock);
+        }
+    }
+
     private ProductResponse getProduct(Long id, RoleName roleName) {
         Product product = switch (roleName) {
             case SELLER -> {
@@ -234,6 +250,12 @@ public class ProductServiceImpl implements ProductService {
         if (product.getStatus() == ProductStatus.DELETED) {
             logger.warn("Product with id {} is already deleted", id);
             return;
+        }
+
+        if (product.isHasVariants()) {
+            product.getProductVariant().forEach(
+                    productVariant -> productVariant.setStatus(VariantStatus.DELETED)
+            );
         }
 
         product.setStatus(ProductStatus.DELETED);

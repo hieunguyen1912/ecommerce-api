@@ -1,6 +1,9 @@
 package com.hieu.ecommerce.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.hieu.ecommerce.common.annotation.EnumPattern;
+import com.hieu.ecommerce.common.constant.ProductStatus;
+import com.hieu.ecommerce.common.constant.VariantStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -37,6 +40,11 @@ public class ProductVariant extends Auditable{
 
     @Min(value = 0, message = "Stock quantity must be zero or greater")
     private Integer stockQuantity;
+
+    @Enumerated(EnumType.STRING)
+    @EnumPattern(name = "Product status", regexp = "^(ACTIVE|INACTIVE|DELETED|OUT_OF_STOCK)$", message = "Product status must be one of: ACTIVE, INACTIVE, DELETED, OUT_OF_STOCK")
+    //@Column(nullable = false)
+    private VariantStatus status = VariantStatus.ACTIVE;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

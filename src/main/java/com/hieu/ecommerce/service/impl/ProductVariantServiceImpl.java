@@ -9,7 +9,6 @@ import com.hieu.ecommerce.repository.ProductRepository;
 import com.hieu.ecommerce.repository.ProductVariantRepository;
 import com.hieu.ecommerce.service.AttributeValueService;
 import com.hieu.ecommerce.service.ImageService;
-import com.hieu.ecommerce.service.ProductValidationService;
 
 import io.micrometer.common.util.StringUtils;
 import org.springframework.stereotype.Service;
@@ -170,6 +169,13 @@ public class ProductVariantServiceImpl implements com.hieu.ecommerce.service.Pro
                 createNewVariant(product, variantReq);
             }
         }
+    }
+
+    @Override
+    public ProductVariant getProductVariant(Long productVariantId) {
+        if (productVariantId == null) return null;
+        return productVariantRepository.findById(productVariantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Variant with id " + productVariantId + " not found"));
     }
 
     private void createNewVariant(Product product, UpdateProductVariantRequest variantReq) {

@@ -13,4 +13,6 @@ public interface ProductVariantService {
     ProductVariant createSingleVariant(CreateProductVariantRequest createProductVariantRequest, Product product);
 
     void updateProductVariants(Product product, UpdateProductRequest updateProductRequest);
+
+    ProductVariant getProductVariant(Long productVariantId);
 }

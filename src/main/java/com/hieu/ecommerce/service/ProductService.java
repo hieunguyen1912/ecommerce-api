@@ -8,6 +8,7 @@ import com.hieu.ecommerce.model.dto.response.ProductResponse;
 import com.hieu.ecommerce.model.dto.response.ProductSummaryResponse;
 import com.hieu.ecommerce.model.entity.Category;
 import com.hieu.ecommerce.model.entity.Product;
+import com.hieu.ecommerce.model.entity.ProductVariant;
 import com.hieu.ecommerce.model.entity.Shop;
 import org.springframework.data.domain.Pageable;
 
@@ -23,6 +24,10 @@ public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse getProductByIdAndShopId(Long id);
     ProductResponse getActiveProductById(Long id);
+
+    Product getActiveProduct(Long id);
+
+    void validateStock(Product product, ProductVariant productVariant, Integer requiredQuantity);
 
     Integer countProducts();
 
