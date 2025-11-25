@@ -1,10 +1,10 @@
 package com.hieu.ecommerce.service.impl;
 
-import com.hieu.ecommerce.exception.EmailExistsException;
-import com.hieu.ecommerce.exception.ResourceNotFoundException;
+import com.hieu.ecommerce.constant.ErrorCode;
+import com.hieu.ecommerce.exception.AppException;
 import com.hieu.ecommerce.mapper.UserMapper;
 import com.hieu.ecommerce.model.dto.request.SignUpRequest;
-import com.hieu.ecommerce.model.dto.request.UserUpdateRequest;
+import com.hieu.ecommerce.model.dto.request.UpdateUserRequest;
 import com.hieu.ecommerce.model.dto.response.UserResponse;
 import com.hieu.ecommerce.model.dto.response.UserSignUpResponse;
 import com.hieu.ecommerce.model.entity.Role;
@@ -44,33 +44,35 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "User not found with id: " + id));
         return userMapper.toResponseDTO(user);
     }
 
     @Override
     public User getUser(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "User not found with id: " + id));
     }
 
     @Override
-    public UserResponse updateUser(Long id, UserUpdateRequest userUpdateRequest) {
+    public UserResponse updateUser(Long id, UpdateUserRequest updateUserRequest) {
         User user = userRepository.findById(id)
-                .orElseThrow(() ->
-            new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "User not found with id: " + id));
 
-        if (userRepository.findByEmail(userUpdateRequest.getEmail()).isPresent() &&
-                !user.getEmail().equals(userUpdateRequest.getEmail())) {
-            throw new EmailExistsException("Email already exists");
+        if (userRepository.findByEmail(updateUserRequest.getEmail()).isPresent() &&
+                !user.getEmail().equals(updateUserRequest.getEmail())) {
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already exists");
         }
 
-        if (userRepository.findByPhone(userUpdateRequest.getPhone()).isPresent() &&
-                !user.getPhone().equals(userUpdateRequest.getPhone())) {
-            throw new EmailExistsException("Phone number already exists");
+        if (userRepository.findByPhone(updateUserRequest.getPhone()).isPresent() &&
+                !user.getPhone().equals(updateUserRequest.getPhone())) {
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");
         }
 
-        userMapper.updateUser(user, userUpdateRequest);
+        userMapper.updateUser(user, updateUserRequest);
 
         return userMapper.toResponseDTO(userRepository.save(user));
     }
@@ -78,18 +80,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserSignUpResponse createUser(SignUpRequest signUpRequest) {
         if (userRepository.findByEmail(signUpRequest.getEmail()).isPresent()) {
-            throw new EmailExistsException("Email already exists");
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already exists");
         }
-
-        if (userRepository.findByPhone(signUpRequest.getPhone()).isPresent()) {
-            throw new EmailExistsException("Phone number already exists");
-        }
-        Role role = roleRepository.findByRoleName(signUpRequest.getRoleName())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
 
         User user = userMapper.toEntity(signUpRequest);
         user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
-        user.setRoles(Set.of(role));
         return userMapper.toSignUpResponse(userRepository.save(user));
     }
 

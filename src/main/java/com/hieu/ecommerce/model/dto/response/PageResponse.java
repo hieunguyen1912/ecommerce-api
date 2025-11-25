@@ -1,19 +1,21 @@
 package com.hieu.ecommerce.model.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
 import java.util.List;
 
-// Pagination Response
 @Getter
 @Setter
 @AllArgsConstructor
-@NoArgsConstructor
+@Builder
 public class PageResponse<T> {
     private List<T> content;
     private int page;
     private int size;
     private long totalElements;
+    private int totalPages;
+    private boolean hasNext;
+    private boolean hasPrevious;
+    private boolean first;
+    private boolean last;
 }

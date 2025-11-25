@@ -1,6 +1,7 @@
 package com.hieu.ecommerce.model.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateAttributeValueRequest {
-    @NotBlank(message = "Attribute id cannot be blank")
+    @NotNull(message = "Attribute id is required")
     private Long attributeId;
 
     @NotBlank(message = "Attribute value cannot be blank")

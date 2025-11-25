@@ -1,6 +1,6 @@
 package com.hieu.ecommerce.model.entity;
 
-import com.hieu.ecommerce.common.constant.RoleName;
+import com.hieu.ecommerce.constant.RoleName;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

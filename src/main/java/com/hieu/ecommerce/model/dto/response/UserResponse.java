@@ -1,8 +1,8 @@
 package com.hieu.ecommerce.model.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.hieu.ecommerce.common.constant.Gender;
-import com.hieu.ecommerce.common.constant.UserStatus;
+import com.hieu.ecommerce.constant.Gender;
+import com.hieu.ecommerce.constant.UserStatus;
 import lombok.Data;
 
 import java.time.Instant;

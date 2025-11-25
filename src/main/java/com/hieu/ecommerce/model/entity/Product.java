@@ -1,11 +1,10 @@
 package com.hieu.ecommerce.model.entity;
 
-import com.hieu.ecommerce.common.annotation.EnumPattern;
-import com.hieu.ecommerce.common.constant.ProductStatus;
+import com.hieu.ecommerce.annotation.EnumPattern;
+import com.hieu.ecommerce.constant.ProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,23 +14,13 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-public class Product extends Auditable{
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Product extends BaseEntity{
 
     @Column(length = 100, nullable = false, unique = true)
     private String name;
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    private BigDecimal price;
-
-    private int stockQuantity;
-
-    private boolean hasVariants = false;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -43,12 +32,7 @@ public class Product extends Auditable{
 
     @Enumerated(EnumType.STRING)
     @EnumPattern(name = "Product status", regexp = "^(ACTIVE|INACTIVE|DELETED|OUT_OF_STOCK)$", message = "Product status must be one of: ACTIVE, INACTIVE, DELETED")
-    //@Column(nullable = false)
     private ProductStatus status = ProductStatus.ACTIVE;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shop_id", nullable = false)
-    private Shop shop;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductVariant> productVariant = new ArrayList<>();

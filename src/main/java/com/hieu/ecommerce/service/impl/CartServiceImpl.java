@@ -1,148 +1,174 @@
 package com.hieu.ecommerce.service.impl;
 
-import com.hieu.ecommerce.common.constant.ProductStatus;
-import com.hieu.ecommerce.common.constant.VariantStatus;
-import com.hieu.ecommerce.exception.ResourceNotFoundException;
+import com.hieu.ecommerce.constant.ErrorCode;
+import com.hieu.ecommerce.constant.ProductStatus;
+import com.hieu.ecommerce.constant.VariantStatus;
+import com.hieu.ecommerce.exception.AppException;
 import com.hieu.ecommerce.mapper.CartMapper;
-import com.hieu.ecommerce.model.dto.request.AddToCartRequestDTO;
-import com.hieu.ecommerce.model.dto.request.UpdateCartItemRequestDTO;
-import com.hieu.ecommerce.model.dto.response.CartResponseDTO;
+import com.hieu.ecommerce.model.dto.request.AddToCartRequest;
+import com.hieu.ecommerce.model.dto.request.UpdateCartItemRequest;
+import com.hieu.ecommerce.model.dto.response.CartResponse;
 import com.hieu.ecommerce.model.entity.*;
-import com.hieu.ecommerce.repository.CartItemRepository;
-import com.hieu.ecommerce.repository.CartRepository;
-import com.hieu.ecommerce.service.CartService;
-import com.hieu.ecommerce.service.ProductService;
-import com.hieu.ecommerce.service.ProductVariantService;
-import com.hieu.ecommerce.service.UserService;
+import com.hieu.ecommerce.repository.*;
+import com.hieu.ecommerce.service.*;
+import com.hieu.ecommerce.util.SecurityUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
+
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-    private final ProductService productService;
-    private final UserService userService;
-    private final ProductVariantService productVariantService;
+    private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final CartMapper cartMapper;
+    private final UserRepository userRepository;
 
-    public CartServiceImpl(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductService productService, UserService userService, ProductVariantService productVariantService, CartMapper cartMapper) {
-        this.cartRepository = cartRepository;
-        this.cartItemRepository = cartItemRepository;
-        this.productService = productService;
-        this.userService = userService;
-        this.productVariantService = productVariantService;
-        this.cartMapper = cartMapper;
-    }
 
     @Override
-    public CartResponseDTO getCart(Long userId) {
-        User user = userService.getUser(userId);
-        Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    @Transactional
+    public CartResponse getCart() {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-        return cartMapper.convertCartToCartResponseDTO(cart);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseGet(() -> {
+                    Cart newCart = Cart.builder()
+                            .user(user)
+                            .build();
+                    return cartRepository.save(newCart);
+                });
+
+        return cartMapper.toCartResponse(cart);
     }
 
     @Override
     @Transactional
-    public CartResponseDTO addToCart(Long userId, AddToCartRequestDTO request) {
-        Product product = productService.getActiveProduct(request.getProductId());
-        User user = userService.getUser(userId);
-        ProductVariant variant = productVariantService.getProductVariant(request.getProductVariantId());
+    public CartResponse addToCart(AddToCartRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-        productService.validateStock(product, variant, request.getQuantity());
+        Product product = productRepository.findByIdAndStatus(request.getProductId(), ProductStatus.ACTIVE)
+            .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        ProductVariant productVariant = productVariantRepository.findByIdAndStatus(request.getProductVariantId(), VariantStatus.ACTIVE)
+            .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        if (!productVariant.getProduct().getId().equals(product.getId())) {
+            throw new AppException(ErrorCode.INVALID_OPERATION, "Variant does not belong to this product");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
         Cart cart = cartRepository.findByUser(user)
-                .orElseGet(() -> cartRepository.save(new Cart(user)));
-        CartItem existingItem = findExistingCartItem(cart, product, variant);
+                .orElseGet(() -> {
+                    Cart newCart = Cart.builder()
+                            .user(user).build();
+                    return cartRepository.save(newCart);
+                });
 
-        if (existingItem != null) {
-            updateExistingCartItem(existingItem, request.getQuantity(), product, variant);
+        Optional<CartItem> existingItem = cartItemRepository.findByCartAndProductAndProductVariant(cart, product, productVariant);
+
+        int totalQuantity = existingItem.map(item -> item.getQuantity() + request.getQuantity())
+                .orElseGet(request::getQuantity);
+
+        if (totalQuantity > productVariant.getStock()) {
+            throw new AppException(ErrorCode.INVALID_OPERATION);
+        }
+
+        if (existingItem.isPresent()) {
+            existingItem.get().setQuantity(totalQuantity);
+            existingItem.get().setPrice(productVariant.getPrice());
+            cartItemRepository.save(existingItem.get());
         } else {
-            CartItem newCartItem = createNewCartItem(cart, product, variant, request.getQuantity());
-            cart.getItems().add(newCartItem);
+            CartItem cartItem = CartItem.builder()
+                    .cart(cart)
+                    .product(product)
+                    .productVariant(productVariant)
+                    .price(productVariant.getPrice())
+                    .quantity(request.getQuantity()).build();
+            cartItemRepository.save(cartItem);
         }
 
-        return cartMapper.convertCartToCartResponseDTO(cart);
-    }
-
-    private void updateExistingCartItem(CartItem existingItem, int quantity, Product product, ProductVariant productVariant) {
-        int newQuantity = existingItem.getQuantity() + quantity;
-        productService.validateStock(product, productVariant, newQuantity);
-        existingItem.setQuantity(newQuantity);
-        existingItem.setPrice(productVariant != null ? productVariant.getPrice() : product.getPrice());
-        cartItemRepository.save(existingItem);
-    }
-
-    private CartItem createNewCartItem(Cart cart, Product product, ProductVariant productVariant, int quantity) {
-        CartItem cartItem = new CartItem();
-        cartItem.setProduct(product);
-        cartItem.setQuantity(quantity);
-        cartItem.setPrice(productVariant != null ? productVariant.getPrice() : product.getPrice());
-        cartItem.setCart(cart);
-        cartItem.setProductVariant(productVariant);
-        return cartItemRepository.save(cartItem);
-    }
-
-    private CartItem findExistingCartItem(Cart cart, Product product, ProductVariant variant) {
-        if (variant != null) {
-            return cartItemRepository.findByCartAndProductAndProductVariant(cart, product, variant);
-        }
-        return cartItemRepository.findByCartAndProductAndProductVariantIsNull(cart, product);
+        return cartMapper.toCartResponse(cart);
     }
 
     @Override
-    public CartResponseDTO updateCartItem(Long userId, UpdateCartItemRequestDTO request) {
-        CartItem cartItem = cartItemRepository.findById(request.getCartItemId())
-                .orElseThrow(() -> new ResourceNotFoundException("CartItem Not Found"));
+    @Transactional
+    public CartResponse updateCartItem(UpdateCartItemRequest request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
 
-        if (!cartItem.getCart().getUser().getId().equals(userId)) {
-            throw new ResourceNotFoundException("cart user id not match");
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+
+        CartItem cartItem = cartItemRepository.findByIdAndCart_User(request.getCartItemId(), user)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, 
+                    "Cart item not found or does not belong to user"));
+
+        Product product = cartItem.getProduct();
+        ProductVariant productVariant = cartItem.getProductVariant();
+
+        if (product.getStatus() != ProductStatus.ACTIVE) {
+            throw new AppException(ErrorCode.INVALID_OPERATION, "Product is not available");
         }
 
-        if (cartItem.getProduct().getStatus() != ProductStatus.ACTIVE) {
-            throw new ResourceNotFoundException("cart product status not active");
+        if (productVariant.getStatus() != VariantStatus.ACTIVE) {
+            throw new AppException(ErrorCode.INVALID_OPERATION, "Product variant is not available");
         }
 
-        productService.validateStock(cartItem.getProduct(), cartItem.getProductVariant(), request.getQuantity());
-
-        if (!cartItem.getProductVariant().getStatus().equals(VariantStatus.ACTIVE)) {
-            throw new ResourceNotFoundException("cart product status not active");
+        if (request.getQuantity() > productVariant.getStock()) {
+            throw new AppException(ErrorCode.INVALID_OPERATION, 
+                "Insufficient stock. Available: " + productVariant.getStock());
         }
 
         cartItem.setQuantity(request.getQuantity());
         cartItemRepository.save(cartItem);
 
-        return cartMapper.convertCartToCartResponseDTO(cartItem.getCart());
-    }
-
-    @Override
-    public void removeCartItem(Long userId, Long cartItemId) {
-        CartItem cartItem = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new ResourceNotFoundException("CartItem Not Found"));
-
-        if (!cartItem.getCart().getUser().getId().equals(userId)) {
-            throw new ResourceNotFoundException("cart user id not match");
-        }
-
-        if (cartItem.getProduct().getStatus() == ProductStatus.DELETED) {
-            throw new ResourceNotFoundException("product have already deleted");
-        }
-
-        cartItemRepository.deleteById(cartItemId);
-    }
-
-    @Override
-    public void clearCart(Long userId) {
-        User user = userService.getUser(userId);
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Cart not found"));
 
-        if (cart != null) {
-            cart.getItems().clear();
-            cartRepository.save(cart);
-        }
+        return cartMapper.toCartResponse(cart);
     }
+    
+    @Override
+    @Transactional
+    public void removeCartItem(Long cartItemId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+
+        CartItem cartItem = cartItemRepository.findByIdAndCart_User(cartItemId, user)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Cart item not found or does not belong to user"));
+
+        cartItemRepository.delete(cartItem);
+    }
+    
+    @Override
+    @Transactional
+    public void clearCart() {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Cart not found"));
+
+        List<CartItem> cartItems = cartItemRepository.findByCart(cart);
+        cartItemRepository.deleteAll(cartItems);
+    }
+
 }

@@ -1,25 +1,30 @@
 package com.hieu.ecommerce.controller;
 
-import com.hieu.ecommerce.common.annotation.ResponseMessage;
+import com.hieu.ecommerce.annotation.ResponseMessage;
 import com.hieu.ecommerce.model.dto.request.LoginRequest;
-import com.hieu.ecommerce.model.dto.request.RefreshTokenRequest;
-import com.hieu.ecommerce.model.dto.response.LoginResult;
-import com.hieu.ecommerce.model.dto.response.ResponseLogin;
+import com.hieu.ecommerce.model.dto.response.LoginResponse;
+import com.hieu.ecommerce.model.dto.response.RefreshTokenResponse;
 import com.hieu.ecommerce.service.AuthService;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.server.Cookie;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.CookieValue;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
+    private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final AuthService authService;
+
+    @Value("${app.jwt.refresh-token-expiration}")
+    private Long refreshTokenExpiration;
 
     public AuthController(AuthService authService) {
         this.authService = authService;
@@ -27,74 +32,61 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseMessage("Login successful")
-    public ResponseEntity<ResponseLogin> login(
+    public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest loginRequest
     ) {
-        LoginResult loginResult = authService.login(loginRequest);
+        LoginResponse loginResponse = authService.login(loginRequest);
 
-        ResponseLogin responseLogin = new ResponseLogin();
-        responseLogin.setAccessToken(loginResult.getAccessToken());
-        responseLogin.setUserInfo(loginResult.getUserInfo());
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", loginResult.getRefreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(60 * 60 * 24 * 7)
-                .sameSite("Strict")
-                .build();
+        ResponseCookie refreshTokenCookie = refreshTokenCookie(loginResponse.getRefreshToken(), refreshTokenExpiration);
 
         return ResponseEntity.status(HttpStatus.OK)
-                .header("Set-Cookie", refreshTokenCookie.toString())
-                .body(responseLogin);
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(loginResponse);
     }
 
     @PostMapping("/refresh")
     @ResponseMessage("Token refreshed successfully")
-    public ResponseEntity<ResponseLogin> refreshToken(@CookieValue(name = "refreshToken", defaultValue = "") String refreshToken) {
-        RefreshTokenRequest refreshTokenRequest = new RefreshTokenRequest(refreshToken);
-        LoginResult loginResult = authService.refreshToken(refreshTokenRequest);
+    public ResponseEntity<RefreshTokenResponse> refreshToken(
+            @CookieValue(name = REFRESH_TOKEN_COOKIE_NAME, defaultValue = "") String refreshToken
+    ) {
+        RefreshTokenResponse response = authService.refreshToken(refreshToken);
 
-        ResponseLogin responseLogin = new ResponseLogin();
-        responseLogin.setAccessToken(loginResult.getAccessToken());
-        responseLogin.setUserInfo(loginResult.getUserInfo());
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", loginResult.getRefreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(60 * 60 * 24 * 7)
-                .sameSite("Strict")
-                .build();
+        ResponseCookie refreshTokenCookie = refreshTokenCookie(response.getRefreshToken(), refreshTokenExpiration);
 
         return ResponseEntity.status(HttpStatus.OK)
-                .header("Set-Cookie", refreshTokenCookie.toString())
-                .body(responseLogin);
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(response);
     }
 
     @PostMapping("/logout")
     @ResponseMessage("Logout successful")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if ("refreshToken".equals(cookie.getName())) {
-                    authService.logout(cookie.getValue());
-                    break;
-                }
-            }
+    public ResponseEntity<Void> logout(
+            @CookieValue(name = REFRESH_TOKEN_COOKIE_NAME, defaultValue = "") String refreshToken,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
+            String accessToken = authorizationHeader.substring(BEARER_PREFIX.length());
+            authService.logout(refreshToken, accessToken);
+        } else {
+            authService.logout(refreshToken, null);
         }
 
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
+        ResponseCookie deleteCookie = refreshTokenCookie(refreshToken, (long) 0);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .build();
+    }
+
+    private ResponseCookie refreshTokenCookie(String token, Long maxAge) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie
+                .from(REFRESH_TOKEN_COOKIE_NAME, token)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .maxAge(0)
-                .sameSite("Strict")
-                .build();
+                .maxAge(refreshTokenExpiration)
+                .sameSite(Cookie.SameSite.STRICT.toString());
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .header("Set-Cookie", refreshTokenCookie.toString())
-                .build();
+        return builder.build();
     }
 }

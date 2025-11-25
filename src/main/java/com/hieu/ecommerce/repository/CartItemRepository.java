@@ -1,17 +1,15 @@
 package com.hieu.ecommerce.repository;
 
-import com.hieu.ecommerce.model.entity.Cart;
-import com.hieu.ecommerce.model.entity.CartItem;
-import com.hieu.ecommerce.model.entity.Product;
-import com.hieu.ecommerce.model.entity.ProductVariant;
+import com.hieu.ecommerce.model.entity.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
-    CartItem findByCartAndProductAndProductVariant(Cart cart, Product product, ProductVariant productVariant);
-    CartItem findByCartAndProductAndProductVariantIsNull(Cart cart, Product product);
+    Optional<CartItem> findByCartAndProductAndProductVariant(Cart cart, Product product, ProductVariant productVariant);
     List<CartItem> findByCart(Cart cart);
+    Optional<CartItem> findByIdAndCart_User(Long cartItemId, User user);
 }

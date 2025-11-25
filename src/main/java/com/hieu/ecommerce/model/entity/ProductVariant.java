@@ -1,8 +1,7 @@
 package com.hieu.ecommerce.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hieu.ecommerce.common.annotation.EnumPattern;
-import com.hieu.ecommerce.common.constant.VariantStatus;
+import com.hieu.ecommerce.annotation.EnumPattern;
+import com.hieu.ecommerce.constant.VariantStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -20,15 +19,10 @@ import java.util.List;
 @Builder
 @Table(name = "product_variants",
         uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "sku"}))
-public class ProductVariant extends Auditable{
-
-    @Id
-    @GeneratedValue
-    private Long id;
+public class ProductVariant extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    @JsonIgnore
     private Product product;
 
     @Column(length = 50, nullable = false)
@@ -37,12 +31,12 @@ public class ProductVariant extends Auditable{
     @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than zero")
     private BigDecimal price;
 
-    @Min(value = 0, message = "Stock quantity must be zero or greater")
-    private Integer stockQuantity;
+    @Column(nullable = false)
+    @Min(value = 0, message = "Stock quantity cannot be negative")
+    private Integer stock = 0;
 
     @Enumerated(EnumType.STRING)
     @EnumPattern(name = "Product status", regexp = "^(ACTIVE|INACTIVE|DELETED|OUT_OF_STOCK)$", message = "Product status must be one of: ACTIVE, INACTIVE, DELETED, OUT_OF_STOCK")
-    //@Column(nullable = false)
     private VariantStatus status = VariantStatus.ACTIVE;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -54,5 +48,5 @@ public class ProductVariant extends Auditable{
     private List<AttributeValue> attributeValues = new ArrayList<>();
 
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductVariantImage> images = new ArrayList<>();
+    private List<ProductImage> images = new ArrayList<>();
 }

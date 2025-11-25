@@ -1,9 +1,9 @@
 package com.hieu.ecommerce.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.hieu.ecommerce.common.annotation.EnumPattern;
-import com.hieu.ecommerce.common.constant.Gender;
-import com.hieu.ecommerce.common.constant.UserStatus;
+import com.hieu.ecommerce.annotation.EnumPattern;
+import com.hieu.ecommerce.constant.Gender;
+import com.hieu.ecommerce.constant.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -65,7 +65,4 @@ public class User extends Auditable{
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private Shop shop;
 }

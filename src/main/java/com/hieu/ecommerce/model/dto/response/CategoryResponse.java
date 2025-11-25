@@ -1,16 +1,20 @@
 package com.hieu.ecommerce.model.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+import java.util.List;
+
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class CategoryResponse {
     private Long id;
     private String name;
+    private String slug;
+    private String description;
     private Long parentId;
     private String parentName;
-    private String description;
+    private List<CategoryResponse> children;
 }

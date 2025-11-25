@@ -1,10 +1,9 @@
 package com.hieu.ecommerce.controller;
 
-import com.hieu.ecommerce.common.SecurityUtil;
-import com.hieu.ecommerce.common.annotation.ResponseMessage;
-import com.hieu.ecommerce.model.dto.request.AddToCartRequestDTO;
-import com.hieu.ecommerce.model.dto.request.UpdateCartItemRequestDTO;
-import com.hieu.ecommerce.model.dto.response.CartResponseDTO;
+import com.hieu.ecommerce.annotation.ResponseMessage;
+import com.hieu.ecommerce.model.dto.request.AddToCartRequest;
+import com.hieu.ecommerce.model.dto.request.UpdateCartItemRequest;
+import com.hieu.ecommerce.model.dto.response.CartResponse;
 import com.hieu.ecommerce.service.CartService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,41 +17,38 @@ public class CartController {
         this.cartService = cartService;
     }
 
-    @PostMapping
-    public ResponseEntity<CartResponseDTO> addCart(@RequestBody AddToCartRequestDTO addToCartRequestDTO) {
-        Long id = SecurityUtil.getCurrentUserId();
-        CartResponseDTO cartResponseDTO = cartService.addToCart(id, addToCartRequestDTO);
-        return ResponseEntity.ok(cartResponseDTO);
-    }
+   @PostMapping
+   @ResponseMessage("Add item to cart successfully")
+   public ResponseEntity<CartResponse> addCart(@RequestBody AddToCartRequest addToCartRequest) {
+       CartResponse cartResponse = cartService.addToCart(addToCartRequest);
+       return ResponseEntity.ok(cartResponse);
+   }
 
     @PutMapping
-    public ResponseEntity<CartResponseDTO> updateCartItem(@RequestBody UpdateCartItemRequestDTO updateCartItemRequestDTO) {
-        Long id = SecurityUtil.getCurrentUserId();
-        CartResponseDTO cartResponseDTO = cartService.updateCartItem(id, updateCartItemRequestDTO);
-        return ResponseEntity.ok(cartResponseDTO);
+    @ResponseMessage("Update cart item successfully")
+    public ResponseEntity<CartResponse> updateCartItem(@RequestBody UpdateCartItemRequest updateCartItemRequest) {
+        CartResponse cartResponse = cartService.updateCartItem(updateCartItemRequest);
+        return ResponseEntity.ok(cartResponse);
     }
 
     @DeleteMapping("/{id}")
     @ResponseMessage("Remove item from cart successfully")
     public ResponseEntity<Void> removeCartItem(@PathVariable Long id) {
-        Long userId = SecurityUtil.getCurrentUserId();
-        cartService.removeCartItem(userId, id);
+        cartService.removeCartItem(id);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping
     @ResponseMessage("Remove all item form cart successfully")
     public ResponseEntity<Void> removeAllCartItems() {
-        Long userId = SecurityUtil.getCurrentUserId();
-        cartService.clearCart(userId);
+        cartService.clearCart();
         return ResponseEntity.ok().build();
     }
 
     @GetMapping
     @ResponseMessage("Get user cart successfully")
-    public ResponseEntity<CartResponseDTO> getCart() {
-        Long userId = SecurityUtil.getCurrentUserId();
-        CartResponseDTO cartResponseDTO = cartService.getCart(userId);
-        return ResponseEntity.ok(cartResponseDTO);
+    public ResponseEntity<CartResponse> getCart() {
+        CartResponse cartResponse = cartService.getCart();
+        return ResponseEntity.ok(cartResponse);
     }
 }

@@ -3,7 +3,7 @@ package com.hieu.ecommerce.exception;
 import com.hieu.ecommerce.model.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
+
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,36 +14,13 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-//    @ExceptionHandler(value = {
-//            ResourceNotFoundException.class,
-//            EmailExistsException.class,
-//            IllegalArgumentException.class
-//    })
-//    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(RuntimeException ex) {
-//        ApiResponse<Object> apiResponse = new ApiResponse<>();
-//        apiResponse.setMessage(ex.getMessage());
-//        return ResponseEntity.status(404)
-//                .body(apiResponse);
-//    }
+    @ExceptionHandler(value = { AppException.class })
+    public ResponseEntity<ApiResponse<Object>> handleAppException(AppException exception) {
+        ApiResponse<Object> apiResponse = ApiResponse.error(exception.getMessage());
 
-    @ExceptionHandler(RefreshTokenException.class)
-    public ResponseEntity<ApiResponse<Object>> handleRefreshTokenException(RefreshTokenException ex) {
-        ApiResponse<Object> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(apiResponse);
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleJsonParseError(HttpMessageNotReadableException ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Invalid input format: " + ex.getMostSpecificCause().getMessage());
-
-        ApiResponse<Object> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage(ex.getMessage());
-        apiResponse.setErrors(error);
-
-        return ResponseEntity.badRequest().body(apiResponse);
+        return ResponseEntity
+            .status(exception.getErrorCode().getStatusCode())
+            .body(apiResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -53,9 +30,7 @@ public class GlobalExceptionHandler {
             errorMap.put(error.getField(), error.getDefaultMessage());
         });
 
-        ApiResponse<Object> res = new ApiResponse<>();
-        res.setMessage("Validation failed");
-        res.setErrors(errorMap);
+        ApiResponse<Object> res = ApiResponse.error("Validation failed", errorMap);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }

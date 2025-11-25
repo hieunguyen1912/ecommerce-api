@@ -1,20 +1,18 @@
 package com.hieu.ecommerce.service;
 
-import com.hieu.ecommerce.model.dto.request.AddToCartRequestDTO;
-import com.hieu.ecommerce.model.dto.request.UpdateCartItemRequestDTO;
-import com.hieu.ecommerce.model.dto.response.CartResponseDTO;
+import com.hieu.ecommerce.model.dto.request.AddToCartRequest;
+import com.hieu.ecommerce.model.dto.request.UpdateCartItemRequest;
+import com.hieu.ecommerce.model.dto.response.CartResponse;
 
 public interface CartService {
 
-    CartResponseDTO getCart(Long userId);
+    CartResponse getCart();
 
-    CartResponseDTO addToCart(Long userId, AddToCartRequestDTO request);
+    CartResponse addToCart(AddToCartRequest request);
 
-    CartResponseDTO updateCartItem(Long userId, UpdateCartItemRequestDTO request);
+    CartResponse updateCartItem(UpdateCartItemRequest request);
 
-    void removeCartItem(Long userId, Long cartItemId);
+    void removeCartItem(Long cartItemId);
 
-    //OrderResponseDTO checkout(Long userId, CheckoutRequest request);
-
-    void clearCart(Long userId);
+    void clearCart();
 }

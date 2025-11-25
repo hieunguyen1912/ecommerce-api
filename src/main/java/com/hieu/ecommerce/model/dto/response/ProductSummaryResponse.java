@@ -1,11 +1,16 @@
 package com.hieu.ecommerce.model.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductSummaryResponse {
     private Long id;

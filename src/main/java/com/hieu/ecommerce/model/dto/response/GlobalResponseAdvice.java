@@ -1,6 +1,5 @@
 package com.hieu.ecommerce.model.dto.response;
 
-import com.hieu.ecommerce.common.annotation.ResponseMessage;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,19 +11,18 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
+import com.hieu.ecommerce.annotation.ResponseMessage;
+
 @RestControllerAdvice
 public class GlobalResponseAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        // Chỉ áp dụng cho REST Controllers
         boolean isRestController = returnType.getContainingClass()
                 .isAnnotationPresent(RestController.class);
 
-        // Không áp dụng cho Swagger/OpenAPI endpoints
         boolean isSwaggerEndpoint = returnType.getContainingClass()
                 .getPackage().getName().contains("springdoc");
 
-        // Không áp dụng cho actuator endpoints
         boolean isActuatorEndpoint = returnType.getContainingClass()
                 .getPackage().getName().contains("actuator");
 
@@ -37,10 +35,10 @@ public class GlobalResponseAdvice implements ResponseBodyAdvice<Object> {
         HttpStatus status = getHttpStatus(response);
         String path = request.getURI().getPath();
 
-        if (body instanceof ApiResponse) return body;         // Đã được wrap
-        if (body instanceof String) return body;              // Trả chuỗi đơn giản (vd: text)
-        if (isFileDownload(selectedContentType)) return body; // File download
-        if (status.is4xxClientError() || status.is5xxServerError()) return body; // Đã handle lỗi
+        if (body instanceof ApiResponse) return body;     
+        if (body instanceof String) return body;             
+        if (isFileDownload(selectedContentType)) return body;
+        if (status.is4xxClientError() || status.is5xxServerError()) return body;
 
         ApiResponse<Object> wrappedResponse = ApiResponse.success(body);
         wrappedResponse.setPath(path);

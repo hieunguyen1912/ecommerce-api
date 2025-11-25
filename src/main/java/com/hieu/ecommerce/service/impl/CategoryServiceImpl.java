@@ -1,42 +1,58 @@
 package com.hieu.ecommerce.service.impl;
 
-import com.hieu.ecommerce.exception.ResourceNotFoundException;
+import com.hieu.ecommerce.constant.ErrorCode;
+import com.hieu.ecommerce.exception.AppException;
 import com.hieu.ecommerce.mapper.CategoryMapper;
-import com.hieu.ecommerce.model.dto.request.CategoryRequest;
+import com.hieu.ecommerce.model.dto.request.CreateCategoryRequest;
+import com.hieu.ecommerce.model.dto.request.UpdateCategoryRequest;
 import com.hieu.ecommerce.model.dto.response.CategoryResponse;
 import com.hieu.ecommerce.model.entity.Category;
 import com.hieu.ecommerce.repository.CategoryRepository;
 import com.hieu.ecommerce.service.CategoryService;
+import com.hieu.ecommerce.util.SlugHelper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
 
-    public CategoryServiceImpl(CategoryRepository categoryRepository, CategoryMapper categoryMapper) {
-        this.categoryRepository = categoryRepository;
-        this.categoryMapper = categoryMapper;
-    }
-
     @Override
-    public CategoryResponse createCategory(CategoryRequest createCategoryRequest) {
-        if (categoryRepository.existsByName(createCategoryRequest.getName())) {
-            throw new IllegalArgumentException("Category name already exists.");
+    public CategoryResponse createCategory(CreateCategoryRequest request) {
+        log.info("Creating category with name: {}", request.getName());
+
+        if (categoryRepository.existsByNameIgnoreCase(request.getName())) {
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
 
-        if (createCategoryRequest.getParentId() != null && !categoryRepository.existsById(createCategoryRequest.getParentId())) {
-            throw new ResourceNotFoundException("Parent category not found with id: " + createCategoryRequest.getParentId());
+        String slug = SlugHelper.generateSlug(request.getName());
+
+        String originalSlug = slug;
+        int counter = 1;
+        while (categoryRepository.existsBySlugIgnoreCase(slug)) {
+            slug = originalSlug + "-" + counter;
+            counter++;
         }
 
-        Category category = categoryMapper.toEntity(createCategoryRequest);
+        Category category = categoryMapper.toEntity(request);
+        category.setSlug(slug);
+
+        if (request.getParentId() != null) {
+            Category parent = categoryRepository.findById(request.getParentId())
+                    .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+            category.setParent(parent);
+        }
+
         Category savedCategory = categoryRepository.save(category);
 
         return categoryMapper.toResponse(savedCategory);
@@ -44,72 +60,90 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse getCategoryById(Long id) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+        Category category = categoryRepository.findByIdWithChildren(id)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Category not found with id: " + id));
 
         return categoryMapper.toResponse(category);
     }
 
     @Override
-    public CategoryResponse updateCategory(Long id, CategoryRequest updateCategoryRequest) {
-        Category existingCategory = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+    public CategoryResponse updateCategory(Long id, UpdateCategoryRequest request) {
+        log.info("Updating category with ID: {}", id);
 
-        if (!updateCategoryRequest.getName().equals(existingCategory.getName()) &&
-            categoryRepository.existsByName(updateCategoryRequest.getName())) {
-            throw new IllegalArgumentException("Category name already exists.");
-        }
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        if (updateCategoryRequest.getParentId() != null &&
-                !updateCategoryRequest.getParentId().equals(existingCategory.getId())) {
-            existingCategory.setParent(new Category(updateCategoryRequest.getParentId()));
-            if (!categoryRepository.existsById(updateCategoryRequest.getParentId())) {
-                throw new ResourceNotFoundException("Parent category not found with id: " + updateCategoryRequest.getParentId());
+        if (request.getName() != null && !request.getName().equals(category.getName())
+                && categoryRepository.existsByNameIgnoreCase(request.getName())) {
+                throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
             }
+
+
+        categoryMapper.update(request, category);
+        if (request.getParentId() != null) {
+            Category parent = categoryRepository.findById(request.getParentId())
+                    .orElseThrow(
+                            () -> new AppException(ErrorCode.DUPLICATE_RESOURCE)
+                    );
+            category.setParent(parent);
+        } else {
+            category.setParent(null);
         }
+        Category updatedCategory = categoryRepository.save(category);
 
-        existingCategory.setName(updateCategoryRequest.getName());
-        existingCategory.setDescription(updateCategoryRequest.getDescription());
-
-        Category updatedCategory = categoryRepository.save(existingCategory);
-
+        log.info("Successfully updated category with ID: {}", updatedCategory.getId());
         return categoryMapper.toResponse(updatedCategory);
     }
 
     @Override
-    public CategoryResponse deleteCategory(Long id) {
+    public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Category not found with id: " + id));
 
         categoryRepository.delete(category);
-
-        return categoryMapper.toResponse(category);
     }
 
     @Override
-    public List<CategoryResponse> getAllCategories(Pageable pageable) {
-        return categoryRepository.findAll(pageable)
-                .stream()
-                .map(categoryMapper::toResponse)
+    public Page<CategoryResponse> getAllCategories(Pageable pageable) {
+        Page<Category> categoryPage = categoryRepository.findAllRootCategories(pageable);
+        return categoryPage.map(categoryMapper::toResponse);
+    }
+
+    @Override
+    public List<CategoryResponse> getCategoryTree() {
+        log.info("Fetching category tree");
+        
+        List<Category> allCategories = categoryRepository.findAllCategories();
+        
+        return buildCategoryTreeFromList(allCategories);
+    }
+    
+    private List<CategoryResponse> buildCategoryTreeFromList(List<Category> allCategories) {
+        Map<Long, List<Category>> categoriesByParentId = allCategories.stream()
+                .filter(category -> category.getParent() != null)
+                .collect(Collectors.groupingBy(category -> category.getParent().getId()));
+        
+        List<Category> rootCategories = allCategories.stream()
+                .filter(category -> category.getParent() == null)
+                .toList();
+        
+        return rootCategories.stream()
+                .map(root -> buildCategoryTree(root, categoriesByParentId))
                 .toList();
     }
-
-    @Override
-    public List<Category> getCategoriesByIds(List<Long> categoryIds) {
-        if (categoryIds == null || categoryIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<Category> categories = categoryRepository.findAllById(categoryIds);
-
-        if (categories.size() != categoryIds.size()) {
-            Set<Long> foundIds = categories.stream().map(Category::getId).collect(Collectors.toSet());
-            List<Long> missingIds = categoryIds.stream()
-                    .filter(id -> !foundIds.contains(id))
-                    .toList();
-            throw new ResourceNotFoundException("Categories not found with IDs: " + missingIds);
-        }
-
-        return new ArrayList<>(categories);
+    
+    private CategoryResponse buildCategoryTree(Category category, Map<Long, List<Category>> categoriesByParentId) {
+        CategoryResponse response = categoryMapper.toResponse(category);
+        
+        List<Category> children = categoriesByParentId.getOrDefault(category.getId(), List.of());
+        
+        List<CategoryResponse> childrenResponses = children.stream()
+                .map(child -> buildCategoryTree(child, categoriesByParentId))
+                .toList();
+        
+        response.setChildren(childrenResponses);
+        return response;
     }
 }

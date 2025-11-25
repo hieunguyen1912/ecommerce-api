@@ -1,10 +1,10 @@
 package com.hieu.ecommerce.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.hieu.ecommerce.common.annotation.GenderSubset;
-import com.hieu.ecommerce.common.annotation.PhoneNumber;
-import com.hieu.ecommerce.common.constant.Gender;
-import com.hieu.ecommerce.common.constant.RoleName;
+import com.hieu.ecommerce.annotation.GenderSubset;
+import com.hieu.ecommerce.annotation.PhoneNumber;
+import com.hieu.ecommerce.constant.Gender;
+import com.hieu.ecommerce.constant.RoleName;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,7 +14,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 
-import static com.hieu.ecommerce.common.constant.Gender.*;
+import static com.hieu.ecommerce.constant.Gender.*;
 
 @Setter
 @Getter
@@ -33,22 +33,8 @@ public class SignUpRequest {
     @Email(message = "Email should be valid")
     private String email;
 
-    @NotBlank(message = "Phone number is required")
-    @PhoneNumber
-    private String phone;
-
-    @NotNull(message = "dateOfBirth is required")
-    @Past(message = "Date of birth must be in the past")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private Date dateOfBirth;
-
     @GenderSubset(anyOf = {MALE, FEMALE, OTHER})
     private Gender gender;
-
-    private String avatarUrl;
-
-    private RoleName roleName;
 
     @NotBlank(message = "password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
