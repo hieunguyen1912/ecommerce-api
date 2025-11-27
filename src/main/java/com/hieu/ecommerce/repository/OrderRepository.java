@@ -13,10 +13,6 @@ import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    Optional<Order> findByOrderNumber(String orderNumber);
-    Optional<Order> findByIdempotencyKey(String idempotencyKey);
-    boolean existsByOrderNumber(String orderNumber);
-    
     Page<Order> findByUser(User user, Pageable pageable);
     
     @Query("SELECT o FROM Order o WHERE o.user.id = :userId AND o.id = :orderId")

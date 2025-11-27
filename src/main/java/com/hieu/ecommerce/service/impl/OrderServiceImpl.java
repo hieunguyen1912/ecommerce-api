@@ -1,5 +1,6 @@
 package com.hieu.ecommerce.service.impl;
 
+import com.hieu.ecommerce.annotation.Idempotent;
 import com.hieu.ecommerce.constant.ErrorCode;
 import com.hieu.ecommerce.constant.OrderStatus;
 import com.hieu.ecommerce.constant.PaymentStatus;
@@ -47,7 +48,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderResponse placeOrderFromCart(CreateOrderRequest request) {
+    @Idempotent
+    public OrderResponse placeOrderFromCart(CreateOrderRequest request, String idempotencyKey) {
         Long userId = SecurityUtil.getCurrentUserId();
         
         User user = userRepository.findById(userId)
@@ -60,97 +62,86 @@ public class OrderServiceImpl implements OrderService {
         if (cartItems.isEmpty()) {
             throw new AppException(ErrorCode.INVALID_OPERATION, "Cart is empty");
         }
-
-        if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isEmpty()) {
-            if (orderRepository.findByIdempotencyKey(request.getIdempotencyKey()).isPresent()) {
-                throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Order with this idempotency key already exists");
-            }
-        } else {
-            request.setIdempotencyKey(userId + "-" + System.currentTimeMillis());
-        }
-
+        
         BigDecimal totalAmount = BigDecimal.ZERO;
-        List<OrderItem> orderItems = cartItems.stream()
-                .map(cartItem -> {
-                    Product product = cartItem.getProduct();
-                    ProductVariant variant = cartItem.getProductVariant();
+            List<OrderItem> orderItems = cartItems.stream()
+                    .map(cartItem -> {
+                        Product product = cartItem.getProduct();
+                        ProductVariant variant = cartItem.getProductVariant();
 
-                    if (product.getStatus() != ProductStatus.ACTIVE) {
-                        throw new AppException(ErrorCode.INVALID_OPERATION, 
-                            "Product " + product.getName() + " is not available");
-                    }
+                        if (product.getStatus() != ProductStatus.ACTIVE) {
+                            throw new AppException(ErrorCode.INVALID_OPERATION,
+                                    "Product " + product.getName() + " is not available");
+                        }
 
-                    if (variant.getStatus() != VariantStatus.ACTIVE) {
-                        throw new AppException(ErrorCode.INVALID_OPERATION, 
-                            "Product variant " + variant.getSku() + " is not available");
-                    }
+                        if (variant.getStatus() != VariantStatus.ACTIVE) {
+                            throw new AppException(ErrorCode.INVALID_OPERATION,
+                                    "Product variant " + variant.getSku() + " is not available");
+                        }
 
-                    if (cartItem.getQuantity() > variant.getStock()) {
-                        throw new AppException(ErrorCode.INVALID_OPERATION, 
-                            "Insufficient stock for " + product.getName() + " - " + variant.getSku() + 
-                            ". Available: " + variant.getStock() + ", Requested: " + cartItem.getQuantity());
-                    }
+                        if (cartItem.getQuantity() > variant.getStock()) {
+                            throw new AppException(ErrorCode.INVALID_OPERATION,
+                                    "Insufficient stock for " + product.getName() + " - " + variant.getSku() +
+                                            ". Available: " + variant.getStock() + ", Requested: " + cartItem.getQuantity());
+                        }
 
-                    BigDecimal unitPrice = variant.getPrice();
-                    BigDecimal itemSubTotal = unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+                        BigDecimal unitPrice = variant.getPrice();
+                        BigDecimal itemSubTotal = unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
 
-                    OrderItem orderItem = new OrderItem();
-                    orderItem.setProduct(product);
-                    orderItem.setProductVariant(variant);
-                    orderItem.setProductName(product.getName());
-                    orderItem.setSku(variant.getSku());
-                    orderItem.setUnitPrice(unitPrice);
-                    orderItem.setQuantity(cartItem.getQuantity());
-                    orderItem.setDiscountAmount(BigDecimal.ZERO);
-                    orderItem.setSubTotal(itemSubTotal);
+                        OrderItem orderItem = new OrderItem();
+                        orderItem.setProduct(product);
+                        orderItem.setProductVariant(variant);
+                        orderItem.setProductName(product.getName());
+                        orderItem.setSku(variant.getSku());
+                        orderItem.setUnitPrice(unitPrice);
+                        orderItem.setQuantity(cartItem.getQuantity());
+                        orderItem.setDiscountAmount(BigDecimal.ZERO);
+                        orderItem.setSubTotal(itemSubTotal);
 
-                    String productImage = getProductImage(variant);
-                    orderItem.setProductImage(productImage);
+                        String productImage = getProductImage(variant);
+                        orderItem.setProductImage(productImage);
 
-                    return orderItem;
-                })
-                .collect(Collectors.toList());
+                        return orderItem;
+                    })
+                    .collect(Collectors.toList());
 
-        totalAmount = orderItems.stream()
-                .map(OrderItem::getSubTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            totalAmount = orderItems.stream()
+                    .map(OrderItem::getSubTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        Order order = new Order();
-        order.setUser(user);
-        order.setOrderNumber(OrderNumberGenerator.generateOrderNumber());
-        order.setOrderStatus(OrderStatus.PENDING);
-        order.setPaymentMethod(request.getPaymentMethod());
-        order.setPaymentStatus(PaymentStatus.PENDING);
-        order.setShippingAddress(request.getShippingAddress());
-        order.setReceiverName(request.getReceiverName());
-        order.setReceiverPhone(request.getReceiverPhone());
-        order.setNote(request.getNote());
-        order.setCouponCode(request.getCouponCode());
-        order.setIdempotencyKey(request.getIdempotencyKey());
-        order.setTotalAmount(totalAmount);
-        order.setDiscountAmount(BigDecimal.ZERO);
-        order.setShippingFee(BigDecimal.ZERO);
-        order.setTaxAmount(BigDecimal.ZERO);
-        order.setFinalAmount(totalAmount);
+            Order order = new Order();
+            order.setUser(user);
+            order.setOrderNumber(OrderNumberGenerator.generateOrderNumber());
+            order.setOrderStatus(OrderStatus.PENDING);
+            order.setPaymentMethod(request.getPaymentMethod());
+            order.setPaymentStatus(PaymentStatus.PENDING);
+            order.setShippingAddress(request.getShippingAddress());
+            order.setReceiverName(request.getReceiverName());
+            order.setReceiverPhone(request.getReceiverPhone());
+            order.setNote(request.getNote());
+            order.setCouponCode(request.getCouponCode());
+            order.setTotalAmount(totalAmount);
+            order.setDiscountAmount(BigDecimal.ZERO);
+            order.setShippingFee(BigDecimal.ZERO);
+            order.setTaxAmount(BigDecimal.ZERO);
+            order.setFinalAmount(totalAmount);
 
-        Order savedOrder = orderRepository.save(order);
+            Order savedOrder = orderRepository.save(order);
 
-        orderItems.forEach(item -> {
-            item.setOrder(savedOrder);
-            orderItemRepository.save(item);
-            
-            ProductVariant variant = item.getProductVariant();
-            variant.setStock(variant.getStock() - item.getQuantity());
-            productVariantRepository.save(variant);
-        });
+            orderItems.forEach(item -> {
+                item.setOrder(savedOrder);
+                orderItemRepository.save(item);
 
-        savedOrder.setItems(orderItems);
+                ProductVariant variant = item.getProductVariant();
+                variant.setStock(variant.getStock() - item.getQuantity());
+                productVariantRepository.save(variant);
+            });
 
-        cartService.clearCart();
+            savedOrder.setItems(orderItems);
 
-        log.info("Order created successfully: {} for user: {}", savedOrder.getOrderNumber(), userId);
+            cartService.clearCart();
 
-        return orderMapper.toOrderResponse(savedOrder);
+            return orderMapper.toOrderResponse(savedOrder);
     }
 
     private String getProductImage(ProductVariant variant) {

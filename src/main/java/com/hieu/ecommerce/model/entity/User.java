@@ -36,10 +36,10 @@ public class User extends Auditable{
     @Column(length = 100, nullable = false)
     private String password;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = true)
     private String phone;
 
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth")
     @Temporal(TemporalType.DATE)
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -52,10 +52,10 @@ public class User extends Auditable{
     private UserStatus  status = UserStatus.ACTIVE;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10)
+    @Column(length = 10, nullable = false)
     private Gender gender;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),

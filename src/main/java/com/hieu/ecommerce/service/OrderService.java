@@ -9,7 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface OrderService {
-    OrderResponse placeOrderFromCart(CreateOrderRequest request);
+    OrderResponse placeOrderFromCart(CreateOrderRequest request, String idempotencyKey);
     
     Page<OrderSummaryResponse> getOrderHistory(Pageable pageable);
     

@@ -1,5 +1,6 @@
 package com.hieu.ecommerce.controller;
 
+import com.hieu.ecommerce.annotation.Idempotent;
 import com.hieu.ecommerce.annotation.ResponseMessage;
 import com.hieu.ecommerce.model.dto.request.CancelOrderRequest;
 import com.hieu.ecommerce.model.dto.request.CreateOrderRequest;
@@ -26,8 +27,10 @@ public class OrderController {
 
     @PostMapping
     @ResponseMessage("Place order successfully")
-    public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody CreateOrderRequest request) {
-        OrderResponse response = orderService.placeOrderFromCart(request);
+    public ResponseEntity<OrderResponse> placeOrder(
+        @Valid @RequestBody CreateOrderRequest request,
+        @RequestHeader("Idempotency-Key") String idempotencyKey) {
+        OrderResponse response = orderService.placeOrderFromCart(request, idempotencyKey);
         return ResponseEntity.ok(response);
     }
 

@@ -31,6 +31,4 @@ public class CreateOrderRequest {
     private String note;
     
     private String couponCode;
-    
-    private String idempotencyKey;
 }

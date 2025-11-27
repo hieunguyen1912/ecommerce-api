@@ -18,7 +18,9 @@ public enum ErrorCode {
     
     // Business logic errors (400)
     DUPLICATE_RESOURCE(4001, "Duplicate resource", HttpStatus.BAD_REQUEST),
-    INVALID_OPERATION(4002, "Invalid operation", HttpStatus.BAD_REQUEST);
+    INVALID_OPERATION(4002, "Invalid operation", HttpStatus.BAD_REQUEST),
+    CONFLICT(4003, "Request is being processed", HttpStatus.CONFLICT);
+
 
     private final int code;
     private final String message;

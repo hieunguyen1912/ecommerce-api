@@ -13,7 +13,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,7 +26,6 @@ public class CategoryManagementController {
 
     @GetMapping
     @ResponseMessage("Categories retrieved successfully")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResponse<CategoryResponse>> getAllCategories(Pageable pageable) {
         Page<CategoryResponse> categories = categoryService.getAllCategories(pageable);
         return ResponseEntity.ok(PaginationHelper.toPaginatedResponse(categories));
@@ -35,21 +33,18 @@ public class CategoryManagementController {
 
     @GetMapping("/tree")
     @ResponseMessage("Category tree retrieved successfully")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<CategoryResponse>> getCategoryTree() {
         return ResponseEntity.ok(categoryService.getCategoryTree());
     }
 
     @GetMapping("/{id}")
     @ResponseMessage("Category retrieved successfully")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable Long id) {
         return ResponseEntity.ok(categoryService.getCategoryById(id));
     }
 
     @PostMapping
     @ResponseMessage("Category created successfully")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> createCategory(
             @Valid @RequestBody CreateCategoryRequest createCategoryRequest) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -58,7 +53,6 @@ public class CategoryManagementController {
 
     @PutMapping("/{id}")
     @ResponseMessage("Category updated successfully")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> updateCategory(
             @PathVariable Long id,
             @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
@@ -67,7 +61,6 @@ public class CategoryManagementController {
 
     @DeleteMapping("/{id}")
     @ResponseMessage("Category deleted successfully")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
