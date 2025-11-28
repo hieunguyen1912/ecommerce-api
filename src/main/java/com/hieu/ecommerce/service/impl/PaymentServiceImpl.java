@@ -12,6 +12,7 @@ import com.hieu.ecommerce.repository.OrderRepository;
 import com.hieu.ecommerce.repository.PaymentRepository;
 import com.hieu.ecommerce.service.PaymentGateway;
 import com.hieu.ecommerce.service.PaymentService;
+import com.hieu.ecommerce.service.StockReservationService;
 import com.hieu.ecommerce.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final List<PaymentGateway> paymentGateways;
     private final PaymentMapper paymentMapper;
+    private final StockReservationService stockReservationService;
 
     @Override
     public PaymentResponse initiatePayment(Long orderId, ProcessPaymentRequest request) {
@@ -79,14 +81,27 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         PaymentGateway paymentGateway = findGateway(payment.getPaymentMethod().name());
-
         Payment updatedPayment = paymentGateway.processCallback(payment, callbackData);
-
         Payment savedPayment = paymentRepository.save(updatedPayment);
 
-        Order order = savedPayment.getOrder();
+        Order order = orderRepository.findById(savedPayment.getOrder().getId())
+            .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                "Order not found: " + savedPayment.getOrder().getId()));
+        
         order.setPaymentStatus(savedPayment.getPaymentStatus());
         orderRepository.save(order);
+
+        if (savedPayment.getPaymentStatus() == PaymentStatus.PAID) {
+            stockReservationService.confirmStockReservation(order);
+            log.info("Stock reservations confirmed for order {} (payment successful)", 
+                order.getOrderNumber());
+        } else if (savedPayment.getPaymentStatus() == PaymentStatus.FAILED) {
+            stockReservationService.releaseStockReservation(order, 
+                "Payment failed: " + (savedPayment.getFailureReason() != null ? 
+                    savedPayment.getFailureReason() : "Unknown reason"));
+            log.info("Stock reservations released for order {} (payment failed)", 
+                order.getOrderNumber());
+        }
 
         return paymentMapper.toResponse(savedPayment);
     }

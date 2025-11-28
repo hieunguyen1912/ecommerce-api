@@ -59,7 +59,7 @@ public class PaymentController {
         }
         
         PaymentResponse paymentResponse = paymentService
-            .verifyPaymentCallback(paymentNumber, allParams);
+            .processPaymentCallback(paymentNumber, allParams);
 
         String frontendUrl = "http://localhost:3000/payment/result?" +
             "paymentNumber=" + paymentNumber + "&" +

@@ -136,9 +136,6 @@ public class ProductManagementController {
         return ResponseEntity.ok(ApiResponse.success(toImageResponse(thumbnail)));
     }
 
-    /**
-     * Helper method: Convert ProductImage entity to ProductImageResponse
-     */
     private ProductImageResponse toImageResponse(ProductImage productImage) {
         if (productImage == null) {
             return null;

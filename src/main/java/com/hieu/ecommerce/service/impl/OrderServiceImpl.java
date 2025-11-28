@@ -9,6 +9,7 @@ import com.hieu.ecommerce.constant.VariantStatus;
 import com.hieu.ecommerce.exception.AppException;
 import com.hieu.ecommerce.model.dto.request.CancelOrderRequest;
 import com.hieu.ecommerce.model.dto.request.CreateOrderRequest;
+import com.hieu.ecommerce.model.dto.request.OrderFilterRequest;
 import com.hieu.ecommerce.model.dto.request.UpdateOrderStatusRequest;
 import com.hieu.ecommerce.model.dto.response.OrderResponse;
 import com.hieu.ecommerce.model.dto.response.OrderSummaryResponse;
@@ -17,19 +18,23 @@ import com.hieu.ecommerce.mapper.OrderMapper;
 import com.hieu.ecommerce.repository.*;
 import com.hieu.ecommerce.service.CartService;
 import com.hieu.ecommerce.service.OrderService;
+import com.hieu.ecommerce.service.StockReservationService;
 import com.hieu.ecommerce.util.OrderNumberGenerator;
 import com.hieu.ecommerce.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.hieu.ecommerce.specification.SearchOperation;
+import com.hieu.ecommerce.specification.SpecificationsBuilder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +50,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final CartService cartService;
     private final OrderMapper orderMapper;
+    private final StockReservationService stockReservationService;
 
     @Override
     @Transactional
@@ -64,46 +70,46 @@ public class OrderServiceImpl implements OrderService {
         }
         
         BigDecimal totalAmount = BigDecimal.ZERO;
-            List<OrderItem> orderItems = cartItems.stream()
-                    .map(cartItem -> {
-                        Product product = cartItem.getProduct();
-                        ProductVariant variant = cartItem.getProductVariant();
+        List<OrderItem> orderItems = cartItems.stream()
+                .map(cartItem -> {
+                    Product product = cartItem.getProduct();
+                    ProductVariant variant = cartItem.getProductVariant();
 
-                        if (product.getStatus() != ProductStatus.ACTIVE) {
-                            throw new AppException(ErrorCode.INVALID_OPERATION,
-                                    "Product " + product.getName() + " is not available");
-                        }
+                    if (product.getStatus() != ProductStatus.ACTIVE) {
+                        throw new AppException(ErrorCode.INVALID_OPERATION,
+                                "Product " + product.getName() + " is not available");
+                    }
 
-                        if (variant.getStatus() != VariantStatus.ACTIVE) {
-                            throw new AppException(ErrorCode.INVALID_OPERATION,
-                                    "Product variant " + variant.getSku() + " is not available");
-                        }
+                    if (variant.getStatus() != VariantStatus.ACTIVE) {
+                        throw new AppException(ErrorCode.INVALID_OPERATION,
+                                "Product variant " + variant.getSku() + " is not available");
+                    }
 
-                        if (cartItem.getQuantity() > variant.getStock()) {
-                            throw new AppException(ErrorCode.INVALID_OPERATION,
-                                    "Insufficient stock for " + product.getName() + " - " + variant.getSku() +
-                                            ". Available: " + variant.getStock() + ", Requested: " + cartItem.getQuantity());
-                        }
+                    if (!stockReservationService.hasEnoughStock(variant, cartItem.getQuantity())) {
+                        throw new AppException(ErrorCode.INVALID_OPERATION,
+                                "Insufficient stock for " + product.getName() + " - " + variant.getSku() +
+                                        ". Available: " + variant.getStock() + ", Requested: " + cartItem.getQuantity());
+                    }
 
-                        BigDecimal unitPrice = variant.getPrice();
-                        BigDecimal itemSubTotal = unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+                    BigDecimal unitPrice = variant.getPrice();
+                    BigDecimal itemSubTotal = unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
 
-                        OrderItem orderItem = new OrderItem();
-                        orderItem.setProduct(product);
-                        orderItem.setProductVariant(variant);
-                        orderItem.setProductName(product.getName());
-                        orderItem.setSku(variant.getSku());
-                        orderItem.setUnitPrice(unitPrice);
-                        orderItem.setQuantity(cartItem.getQuantity());
-                        orderItem.setDiscountAmount(BigDecimal.ZERO);
-                        orderItem.setSubTotal(itemSubTotal);
+                    OrderItem orderItem = new OrderItem();
+                    orderItem.setProduct(product);
+                    orderItem.setProductVariant(variant);
+                    orderItem.setProductName(product.getName());
+                    orderItem.setSku(variant.getSku());
+                    orderItem.setUnitPrice(unitPrice);
+                    orderItem.setQuantity(cartItem.getQuantity());
+                    orderItem.setDiscountAmount(BigDecimal.ZERO);
+                    orderItem.setSubTotal(itemSubTotal);
 
-                        String productImage = getProductImage(variant);
-                        orderItem.setProductImage(productImage);
+                    String productImage = getProductImage(variant);
+                    orderItem.setProductImage(productImage);
 
-                        return orderItem;
-                    })
-                    .collect(Collectors.toList());
+                    return orderItem;
+                })
+                .toList();
 
             totalAmount = orderItems.stream()
                     .map(OrderItem::getSubTotal)
@@ -131,11 +137,9 @@ public class OrderServiceImpl implements OrderService {
             orderItems.forEach(item -> {
                 item.setOrder(savedOrder);
                 orderItemRepository.save(item);
-
-                ProductVariant variant = item.getProductVariant();
-                variant.setStock(variant.getStock() - item.getQuantity());
-                productVariantRepository.save(variant);
             });
+
+            stockReservationService.reserveStockForOrder(order, orderItems, 15);
 
             savedOrder.setItems(orderItems);
 
@@ -213,13 +217,22 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelledAt(Instant.now());
         order.setCancellationReason(request.getReason());
 
-        if (order.getItems() != null && !order.getItems().isEmpty()) {
-            order.getItems().forEach(item -> {
-                ProductVariant variant = item.getProductVariant();
-                variant.setStock(variant.getStock() + item.getQuantity());
-                productVariantRepository.save(variant);
-                log.debug("Restored stock for variant {}: +{} units", variant.getSku(), item.getQuantity());
-            });
+        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+            if (order.getItems() != null && !order.getItems().isEmpty()) {
+                order.getItems().forEach(item -> {
+                    ProductVariant variant = item.getProductVariant();
+                    variant.setStock(variant.getStock() + item.getQuantity());
+                    productVariantRepository.save(variant);
+                    log.debug("Restored stock for variant {}: +{} units (order was paid)", 
+                        variant.getSku(), item.getQuantity());
+                });
+            }
+            log.info("Restored stock for cancelled order {} (order was paid)", order.getOrderNumber());
+        } else {
+            stockReservationService.releaseStockReservation(order, 
+                "Order cancelled by user: " + request.getReason());
+            log.info("Released stock reservations for cancelled order {} (order was not paid)", 
+                order.getOrderNumber());
         }
 
         Order savedOrder = orderRepository.save(order);
@@ -256,13 +269,22 @@ public class OrderServiceImpl implements OrderService {
                 if (request.getNote() != null && !request.getNote().isEmpty()) {
                     order.setCancellationReason(request.getNote());
                 }
-                if (order.getItems() != null && !order.getItems().isEmpty()) {
-                    order.getItems().forEach(item -> {
-                        ProductVariant variant = item.getProductVariant();
-                        variant.setStock(variant.getStock() + item.getQuantity());
-                        productVariantRepository.save(variant);
-                        log.debug("Restored stock for variant {}: +{} units", variant.getSku(), item.getQuantity());
-                    });
+                if (order.getPaymentStatus() == PaymentStatus.PAID) {
+                    if (order.getItems() != null && !order.getItems().isEmpty()) {
+                        order.getItems().forEach(item -> {
+                            ProductVariant variant = item.getProductVariant();
+                            variant.setStock(variant.getStock() + item.getQuantity());
+                            productVariantRepository.save(variant);
+                            log.debug("Restored stock for variant {}: +{} units (order was paid)", 
+                                variant.getSku(), item.getQuantity());
+                        });
+                    }
+                    log.info("Restored stock for cancelled order {} (order was paid)", order.getOrderNumber());
+                } else {
+                    stockReservationService.releaseStockReservation(order, 
+                        "Order cancelled by admin: " + (request.getNote() != null ? request.getNote() : "No reason"));
+                    log.info("Released stock reservations for cancelled order {} (order was not paid)", 
+                        order.getOrderNumber());
                 }
                 break;
             case PENDING:
@@ -286,6 +308,68 @@ public class OrderServiceImpl implements OrderService {
             savedOrder.getOrderNumber(), currentStatus, newStatus);
         
         return orderMapper.toOrderResponse(savedOrder);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderSummaryResponse> getAllOrdersForAdmin(Pageable pageable, OrderFilterRequest filter) {
+        SpecificationsBuilder<Order> builder = new SpecificationsBuilder<>();
+
+        if (filter.getOrderStatuses() != null && !filter.getOrderStatuses().isEmpty()) {
+            if (filter.getOrderStatuses().size() == 1) {
+                builder.with("orderStatus", SearchOperation.EQUALITY, filter.getOrderStatuses().get(0));
+            } else {
+                builder.with("orderStatus", SearchOperation.IN, filter.getOrderStatuses());
+            }
+        }
+
+        if (filter.getPaymentStatuses() != null && !filter.getPaymentStatuses().isEmpty()) {
+            if (filter.getPaymentStatuses().size() == 1) {
+                builder.with("paymentStatus", SearchOperation.EQUALITY, filter.getPaymentStatuses().get(0));
+            } else {
+                builder.with("paymentStatus", SearchOperation.IN, filter.getPaymentStatuses());
+            }
+        }
+
+        if (filter.getMinAmount() != null) {
+            builder.with("finalAmount", SearchOperation.GREATER_THAN_OR_EQUAL, filter.getMinAmount());
+        }
+
+        if (filter.getMaxAmount() != null) {
+            builder.with("finalAmount", SearchOperation.LESS_THAN_OR_EQUAL, filter.getMaxAmount());
+        }
+
+        if (filter.getStartDate() != null) {
+            Instant startInstant = filter.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC);
+            builder.with("createdAt", SearchOperation.GREATER_THAN_OR_EQUAL, startInstant);
+        }
+
+        if (filter.getEndDate() != null) {
+            Instant endInstant = filter.getEndDate().atTime(23, 59, 59).toInstant(ZoneOffset.UTC);
+            builder.with("createdAt", SearchOperation.LESS_THAN_OR_EQUAL, endInstant);
+        }
+
+        Specification<Order> filterSpec = builder.build();
+
+        Page<Order> orders = filterSpec != null
+                ? orderRepository.findAll(filterSpec, pageable)
+                : orderRepository.findAll(pageable);
+
+        log.info("Retrieved {} orders for admin", orders.getTotalElements());
+
+        return orders.map(orderMapper::toOrderSummaryResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderByIdForAdmin(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Order with id " + orderId + " not found"));
+
+        log.info("Retrieved order: {} for admin", order.getOrderNumber());
+
+        return orderMapper.toOrderResponse(order);
     }
 
     private void validateStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {

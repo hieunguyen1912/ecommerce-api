@@ -2,6 +2,7 @@ package com.hieu.ecommerce.service;
 
 import com.hieu.ecommerce.model.dto.request.CancelOrderRequest;
 import com.hieu.ecommerce.model.dto.request.CreateOrderRequest;
+import com.hieu.ecommerce.model.dto.request.OrderFilterRequest;
 import com.hieu.ecommerce.model.dto.request.UpdateOrderStatusRequest;
 import com.hieu.ecommerce.model.dto.response.OrderResponse;
 import com.hieu.ecommerce.model.dto.response.OrderSummaryResponse;
@@ -18,4 +19,8 @@ public interface OrderService {
     OrderResponse cancelOrder(Long orderId, CancelOrderRequest request);
     
     OrderResponse updateOrderStatus(Long orderId, UpdateOrderStatusRequest request);
+    
+    Page<OrderSummaryResponse> getAllOrdersForAdmin(Pageable pageable, OrderFilterRequest filter);
+    
+    OrderResponse getOrderByIdForAdmin(Long orderId);
 }

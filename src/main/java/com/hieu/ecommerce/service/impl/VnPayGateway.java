@@ -206,15 +206,39 @@ public class VnPayGateway implements PaymentGateway {
         String vnpSecureHash = vnpParams.get("vnp_SecureHash");
 
         Map<String, String> paramsToVerify = new HashMap<>(vnpParams);
-        paramsToVerify.remove("vnp_SecureHash");
-
-        String queryString = paramsToVerify.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> e.getKey() + "=" + e.getValue())
-                .collect(Collectors.joining("&"));
-
-        String calculatedHash = hmacSHA512(secretKey, queryString);
-
+        paramsToVerify.remove("vnp_SecureHash"); // Loại bỏ vnp_SecureHash
+        
+        List<String> fieldNames = new ArrayList<>(paramsToVerify.keySet());
+        Collections.sort(fieldNames);
+        
+        StringBuilder hashData = new StringBuilder();
+        
+        for (int i = 0; i < fieldNames.size(); i++) {
+            String fieldName = fieldNames.get(i);
+            String fieldValue = paramsToVerify.get(fieldName);
+            
+            if (fieldValue != null && fieldValue.length() > 0) {
+                // Build hash data với encoded value (giống như khi tạo)
+                hashData.append(fieldName);
+                hashData.append('=');
+                try {
+                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                } catch (UnsupportedEncodingException e) {
+                    log.error("Error encoding field value: {}", fieldValue, e);
+                    return false;
+                }
+                
+                // Thêm & nếu không phải field cuối cùng
+                if (i < fieldNames.size() - 1) {
+                    hashData.append('&');
+                }
+            }
+        }
+        
+        String calculatedHash = hmacSHA512(secretKey, hashData.toString());
+        
+        log.debug("Verifying signature - Calculated: {}, Received: {}", calculatedHash, vnpSecureHash);
+        
         return calculatedHash.equals(vnpSecureHash);
     }
 

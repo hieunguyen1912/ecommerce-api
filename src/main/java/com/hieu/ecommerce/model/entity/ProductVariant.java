@@ -49,4 +49,10 @@ public class ProductVariant extends BaseEntity{
 
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
+
+    @Version
+    private Long version;
+
+    @OneToMany(mappedBy = "")
+    private List<StockReservation> stockReservation;
 }
