@@ -47,5 +47,8 @@ public class OrderItem extends BaseEntity {
 
     @Column(name = "sub_total", precision = 15, scale = 2, nullable = false)
     private BigDecimal subTotal;
+
+    @OneToOne(mappedBy = "orderItem", cascade = CascadeType.ALL)
+    private Review review;
 }
 
