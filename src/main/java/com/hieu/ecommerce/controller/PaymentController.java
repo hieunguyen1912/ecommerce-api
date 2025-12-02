@@ -4,6 +4,12 @@ import com.hieu.ecommerce.annotation.ResponseMessage;
 import com.hieu.ecommerce.model.dto.request.ProcessPaymentRequest;
 import com.hieu.ecommerce.model.dto.response.PaymentResponse;
 import com.hieu.ecommerce.service.PaymentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,14 +25,22 @@ import java.util.Map;
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Payments", description = "API endpoints for payment processing")
 public class PaymentController {
 
     private final PaymentService paymentService;
 
     @PostMapping("/orders/{orderId}/initiate")
+    @Operation(summary = "Initiate payment", description = "Initiate payment for an order")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Payment initiated successfully"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid payment request")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Payment initiated successfully")
     public ResponseEntity<PaymentResponse> initiatePayment(
-            @PathVariable Long orderId,
+            @Parameter(description = "Order ID", required = true) @PathVariable Long orderId,
             @Valid @RequestBody ProcessPaymentRequest request,
             HttpServletRequest httpRequest) {
 
@@ -44,8 +58,12 @@ public class PaymentController {
     }
 
     @GetMapping("/callback/vnpay")
+    @Operation(summary = "VnPay return URL callback", description = "Handle VnPay payment return callback (for frontend redirect)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "Redirect to frontend payment result page")
+    })
     public ResponseEntity<?> handleVnPayReturnUrl(
-            @RequestParam Map<String, String> allParams) {
+            @Parameter(description = "VnPay callback parameters") @RequestParam Map<String, String> allParams) {
         
         log.info("Received VnPay RETURN URL callback: {}", allParams);
         
@@ -74,8 +92,13 @@ public class PaymentController {
     }
 
     @PostMapping("/webhook/vnpay")
+    @Operation(summary = "VnPay IPN webhook", description = "Handle VnPay IPN (Instant Payment Notification) webhook")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "IPN processed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid IPN data")
+    })
     public ResponseEntity<String> handleVnPayIpn(
-            @RequestParam Map<String, String> allParams) {
+            @Parameter(description = "VnPay IPN parameters") @RequestParam Map<String, String> allParams) {
         
         log.info("Received VnPay IPN (Webhook): {}", allParams);
         

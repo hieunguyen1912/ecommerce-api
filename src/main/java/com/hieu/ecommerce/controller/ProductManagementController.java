@@ -13,6 +13,11 @@ import com.hieu.ecommerce.model.entity.ProductImage;
 import com.hieu.ecommerce.service.ProductImageService;
 import com.hieu.ecommerce.service.ProductService;
 import com.hieu.ecommerce.service.ProductVariantService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/admin/products")
 @RequiredArgsConstructor
+@Tag(name = "Product Management", description = "API endpoints for product management (Admin only)")
 public class ProductManagementController {
 
     private final ProductService productService;
@@ -38,6 +44,12 @@ public class ProductManagementController {
 
 
     @GetMapping
+    @Operation(summary = "Get all products (Admin)", description = "Retrieve paginated list of all products with filters. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Products retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<PageResponse<ProductSummaryResponse>> getAllProducts(
             @PageableDefault(page = 0, size = 10, sort = "name", direction = Sort.Direction.ASC)
             Pageable pageable,
@@ -48,6 +60,13 @@ public class ProductManagementController {
     }
 
     @PostMapping
+    @Operation(summary = "Create product", description = "Create a new product. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product created successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Create product successfully")
     public ResponseEntity<ProductResponse> createProduct(
             @Valid @RequestBody CreateProductRequest request) {
@@ -55,15 +74,30 @@ public class ProductManagementController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
+    @Operation(summary = "Get product by ID (Admin)", description = "Retrieve product details by ID. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ProductResponse> getProductById(
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id) {
         ProductResponse product = productService.getProductById(id);
         return ResponseEntity.ok(product);
     }
 
     @PutMapping("/{id}/basic-info")
+    @Operation(summary = "Update product basic info", description = "Update basic product information. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product updated successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Update product basic info successfully")
     public ResponseEntity<ApiResponse<ProductResponse>> updateBasicInfo(
-            @PathVariable Long id,
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id,
             @Valid @RequestBody UpdateProductRequest request) {
 
         ProductResponse response = productService.updateProductBasicInfo(id, request);
@@ -72,49 +106,92 @@ public class ProductManagementController {
     }
 
     @PostMapping("/{id}/variants")
+    @Operation(summary = "Add product variant", description = "Add a new variant to a product. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Variant added successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Add variant successfully")
     public ResponseEntity<ProductResponse> addVariant(
-            @PathVariable Long id,
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id,
             @Valid @RequestBody CreateProductVariantRequest request) {
         return ResponseEntity.ok(productService.addVariant(id, request));
     }
 
     @DeleteMapping("/{id}/variants/{variantId}")
+    @Operation(summary = "Remove product variant", description = "Remove a variant from a product. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Variant removed successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product or variant not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Remove variant successfully")
     public ResponseEntity<ProductResponse> removeVariant(
-            @PathVariable Long id,
-            @PathVariable Long variantId) {
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id,
+            @Parameter(description = "Variant ID", required = true) @PathVariable Long variantId) {
         return ResponseEntity.ok(productService.removeVariant(id, variantId));
     }
 
     @PutMapping("/{id}/variants/{variantId}")
+    @Operation(summary = "Update product variant", description = "Update a product variant. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Variant updated successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product or variant not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Update variant successfully")
     public ResponseEntity<ProductVariantResponse> updateProductVariant(
-            @PathVariable Long id,
-            @PathVariable Long variantId,
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id,
+            @Parameter(description = "Variant ID", required = true) @PathVariable Long variantId,
             @Valid @RequestBody UpdateVariantRequest request) {
         return ResponseEntity.ok(productVariantService.updateProductVariant(id, variantId, request));
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete product", description = "Delete a product. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product deleted successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Delete product successfully")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProduct(
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}/status")
+    @Operation(summary = "Change product status", description = "Update product status (ACTIVE, INACTIVE, etc.). Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product status updated successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Change product status successfully")
-    public ResponseEntity<Void> changeStatus(@PathVariable Long id,
-                                              @RequestParam ProductStatus status) {
+    public ResponseEntity<Void> changeStatus(
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id,
+            @Parameter(description = "New product status", required = true) @RequestParam ProductStatus status) {
         productService.changeStatus(id, status);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}/images")
+    @Operation(summary = "Get product images", description = "Retrieve all images for a product. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product images retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Get product images successfully")
     public ResponseEntity<ApiResponse<List<ProductImageResponse>>> getProductImages(
-            @PathVariable Long id) {
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id) {
 
         List<ProductImage> images = productImageService.getImagesByProductId(id);
         List<ProductImageResponse> responses = images.stream()
@@ -125,9 +202,15 @@ public class ProductManagementController {
     }
 
     @GetMapping("/{id}/thumbnail")
+    @Operation(summary = "Get product thumbnail", description = "Retrieve thumbnail image for a product. Requires ADMIN role")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thumbnail retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Get thumbnail successfully")
     public ResponseEntity<ApiResponse<ProductImageResponse>> getProductThumbnail(
-            @PathVariable Long id) {
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id) {
 
         ProductImage thumbnail = productImageService.getThumbnailByProductId(id);
         if (thumbnail == null) {

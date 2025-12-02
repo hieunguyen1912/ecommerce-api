@@ -5,6 +5,10 @@ import com.hieu.ecommerce.model.dto.request.LoginRequest;
 import com.hieu.ecommerce.model.dto.response.LoginResponse;
 import com.hieu.ecommerce.model.dto.response.RefreshTokenResponse;
 import com.hieu.ecommerce.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.server.Cookie;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@Tag(name = "Authentication", description = "API endpoints for user authentication")
 public class AuthController {
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
@@ -31,6 +36,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "User login", description = "Authenticate user and return JWT tokens")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful"),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    })
     @ResponseMessage("Login successful")
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest loginRequest
@@ -45,6 +55,11 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Refresh token", description = "Refresh access token using refresh token from cookie")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
+    })
     @ResponseMessage("Token refreshed successfully")
     public ResponseEntity<RefreshTokenResponse> refreshToken(
             @CookieValue(name = REFRESH_TOKEN_COOKIE_NAME, defaultValue = "") String refreshToken
@@ -59,6 +74,10 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "User logout", description = "Logout user and invalidate tokens")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful")
+    })
     @ResponseMessage("Logout successful")
     public ResponseEntity<Void> logout(
             @CookieValue(name = REFRESH_TOKEN_COOKIE_NAME, defaultValue = "") String refreshToken,

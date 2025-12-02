@@ -9,6 +9,12 @@ import com.hieu.ecommerce.model.dto.response.PageResponse;
 import com.hieu.ecommerce.service.OrderExportService;
 import com.hieu.ecommerce.service.OrderService;
 import com.hieu.ecommerce.util.PaginationHelper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -24,12 +30,19 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/admin/orders")
 @RequiredArgsConstructor
+@Tag(name = "Order Management", description = "API endpoints for order management (Admin only)")
 public class OrderManagementController {
 
     private final OrderService orderService;
     private final OrderExportService orderExportService;
 
     @GetMapping
+    @Operation(summary = "Get all orders (Admin)", description = "Retrieve paginated list of all orders with filters. Requires ADMIN role")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Orders retrieved successfully")
     public ResponseEntity<PageResponse<OrderSummaryResponse>> getAllOrders(
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
@@ -40,26 +53,48 @@ public class OrderManagementController {
     }
 
     @GetMapping("/{orderId}")
+    @Operation(summary = "Get order by ID (Admin)", description = "Retrieve order details by ID. Requires ADMIN role")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Order retrieved successfully")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId) {
+    public ResponseEntity<OrderResponse> getOrderById(
+            @Parameter(description = "Order ID", required = true) @PathVariable Long orderId) {
         OrderResponse response = orderService.getOrderByIdForAdmin(orderId);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{orderId}/status")
+    @Operation(summary = "Update order status", description = "Update order status. Requires ADMIN role")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order status updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Update order status successfully")
     public ResponseEntity<OrderResponse> updateOrderStatus(
-            @PathVariable Long orderId,
+            @Parameter(description = "Order ID", required = true) @PathVariable Long orderId,
             @Valid @RequestBody UpdateOrderStatusRequest request) {
         OrderResponse response = orderService.updateOrderStatus(orderId, request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/export")
+    @Operation(summary = "Export orders", description = "Export orders to CSV file. Requires ADMIN role")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Orders exported successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid format"),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @ResponseMessage("Orders exported successfully")
     public ResponseEntity<Resource> exportOrders(
             @Valid @ModelAttribute OrderFilterRequest filter,
-            @RequestParam(defaultValue = "csv") String format) {
+            @Parameter(description = "Export format (csv)", example = "csv") @RequestParam(defaultValue = "csv") String format) {
         
         if (!"csv".equalsIgnoreCase(format)) {
             return ResponseEntity.badRequest().build();

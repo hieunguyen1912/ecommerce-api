@@ -7,6 +7,11 @@ import com.hieu.ecommerce.model.dto.response.ProductResponse;
 import com.hieu.ecommerce.model.dto.response.ProductSummaryResponse;
 import com.hieu.ecommerce.service.ProductService;
 import com.hieu.ecommerce.util.PaginationHelper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +25,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/products")
+@Tag(name = "Products", description = "API endpoints for product browsing")
 public class ProductController {
     private final ProductService productService;
 
@@ -28,6 +34,10 @@ public class ProductController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all products", description = "Retrieve paginated list of active products")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Products retrieved successfully")
+    })
     public ResponseEntity<PageResponse<ProductSummaryResponse>> getAllProducts(
             Pageable pageable
     ) {
@@ -37,7 +47,13 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
+    @Operation(summary = "Get product by ID", description = "Retrieve product details by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Product retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Product not found")
+    })
+    public ResponseEntity<ProductResponse> getProductById(
+            @Parameter(description = "Product ID", required = true) @PathVariable Long id) {
         return ResponseEntity.ok(productService.getActiveProductById(id));
     }
 
