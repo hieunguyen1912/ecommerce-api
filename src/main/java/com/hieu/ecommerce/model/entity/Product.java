@@ -5,6 +5,7 @@ import com.hieu.ecommerce.constant.ProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,10 +42,30 @@ public class Product extends BaseEntity{
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Review> reviews = new ArrayList<>();
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    private BigDecimal averageRating = BigDecimal.ZERO;
 
-    @Embedded
-    private ProductRatingSummary productRatingSummary;
+    @Column(name = "total_reviews")
+    @Builder.Default
+    private int totalReviews = 0;
+
+    @Column(name = "rating_1_count")
+    @Builder.Default
+    private int rating1Count = 0;
+
+    @Column(name = "rating_2_count")
+    @Builder.Default
+    private int rating2Count = 0;
+
+    @Column(name = "rating_3_count")
+    @Builder.Default
+    private int rating3Count = 0;
+
+    @Column(name = "rating_4_count")
+    @Builder.Default
+    private int rating4Count = 0;
+
+    @Column(name = "rating_5_count")
+    @Builder.Default
+    private int rating5Count = 0;
 }

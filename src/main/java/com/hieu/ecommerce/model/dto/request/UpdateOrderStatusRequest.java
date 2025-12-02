@@ -15,7 +15,7 @@ import lombok.Setter;
 public class UpdateOrderStatusRequest {
     
     @NotNull(message = "Order status is required")
-    @EnumPattern(name = "Order Status", regexp = "^(PENDING|CONFIRMED|SHIPPED|DELIVERED|CANCELLED)$", 
+        @EnumPattern(name = "Order Status", regexp = "^(PENDING|CONFIRMED|SHIPPED|DELIVERED|CANCELLED)$",
         message = "Order status must be one of: PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED")
     private OrderStatus status;
     

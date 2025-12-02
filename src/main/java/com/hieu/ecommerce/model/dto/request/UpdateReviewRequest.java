@@ -4,10 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -15,20 +12,18 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateReviewRequest {
-    @NotNull(message = "Order Item is required")
-    private Long orderItemId;
-
-    @NotNull(message = "rating is required")
-    @Min(1)
-    @Max(5)
-    private Integer rating;
-
+@Builder
+public class UpdateReviewRequest {
     @Size(max = 200, message = "Title must not exceed 200 characters")
     private String title;
 
     @Size(max = 2000, message = "Comment must not exceed 2000 characters")
     private String comment;
+
+    @NotNull(message = "rating is required")
+    @Min(1)
+    @Max(5)
+    private Integer rating;
 
     private List<String> imageUrls;
 }

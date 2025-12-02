@@ -26,8 +26,4 @@ public class ReviewReply extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false, length = 1000)
     @NotNull(message = "Reply content is required")
     private String content;
-
-    @Column(name = "is_edited", nullable = false)
-    @Builder.Default
-    private Boolean isEdited = false;
 }

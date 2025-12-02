@@ -37,9 +37,6 @@ public class ProductImageController {
                 .body(ApiResponse.success(toResponse(productImage)));
     }
 
-    /**
-     * Upload nhiều ảnh cho variant
-     */
     @PostMapping(value = "/bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseMessage("Upload images successfully")
     public ResponseEntity<ApiResponse<List<ProductImageResponse>>> uploadMultipleImages(
@@ -59,9 +56,6 @@ public class ProductImageController {
                 .body(ApiResponse.success(responses));
     }
 
-    /**
-     * Lấy tất cả ảnh của một variant
-     */
     @GetMapping
     @ResponseMessage("Get images successfully")
     public ResponseEntity<ApiResponse<List<ProductImageResponse>>> getImagesByVariant(
@@ -76,9 +70,7 @@ public class ProductImageController {
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
-    /**
-     * Lấy một ảnh theo ID
-     */
+
     @GetMapping("/{imageId}")
     @ResponseMessage("Get image successfully")
     public ResponseEntity<ApiResponse<ProductImageResponse>> getImageById(
@@ -88,9 +80,6 @@ public class ProductImageController {
         return ResponseEntity.ok(ApiResponse.success(toResponse(productImage)));
     }
 
-    /**
-     * Xóa ảnh
-     */
     @DeleteMapping("/{imageId}")
     @ResponseMessage("Delete image successfully")
     public ResponseEntity<Void> deleteImage(@PathVariable Long imageId) {
@@ -98,9 +87,6 @@ public class ProductImageController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * Đặt ảnh làm thumbnail
-     */
     @PutMapping("/{imageId}/thumbnail")
     @ResponseMessage("Set thumbnail successfully")
     public ResponseEntity<ApiResponse<ProductImageResponse>> setThumbnail(
@@ -110,9 +96,6 @@ public class ProductImageController {
         return ResponseEntity.ok(ApiResponse.success(toResponse(productImage)));
     }
 
-    /**
-     * Di chuyển ảnh sang variant khác
-     */
     @PutMapping("/{imageId}/move")
     @ResponseMessage("Move image successfully")
     public ResponseEntity<ApiResponse<ProductImageResponse>> moveImage(
@@ -125,9 +108,6 @@ public class ProductImageController {
     }
 
 
-    /**
-     * Helper method: Convert ProductImage entity to ProductImageResponse
-     */
     private ProductImageResponse toResponse(ProductImage productImage) {
         if (productImage == null) {
             return null;
